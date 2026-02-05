@@ -3803,18 +3803,20 @@ const URSCategorySection = ({ category, ursItems, onSelectURS, isExpanded, onTog
 
 // Panneau détail URS (contenu du drawer)
 const URSDetailContent = ({ urs, userRole = 'metier' }) => {
+  const isNew = urs._isNew;
+  const autoId = isNew ? `URS-${String(ursData.length + 1).padStart(3, '0')}` : urs.id;
   const [activeTab, setActiveTab] = useState('details');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isNew);
   const [editData, setEditData] = useState({ title: urs.title, description: urs.description });
   const [isValidated, setIsValidated] = useState(urs.validated);
   const [isQaOk, setIsQaOk] = useState(urs.qaOpinion === 'ok');
-  const [comments, setComments] = useState([
+  const [comments, setComments] = useState(isNew ? [] : [
     { user: 'Marie Lambert', role: 'QA', time: 'Hier 16:30', message: 'La formulation de cette exigence est claire et testable. Conforme aux standards.', type: 'qa', avatar: 'ML' },
     { user: 'Jean Dupont', role: 'UPM', time: 'Hier 10:15', message: 'Pouvons-nous préciser le délai d\'expiration de session ?', type: 'question', avatar: 'JD' },
   ]);
 
   // Historique avec diffs
-  const historyEvents = [
+  const historyEvents = isNew ? [] : [
     { type: 'validated', action: 'Validation métier', user: 'Jean Dupont', date: '28 nov. 14:32' },
     { type: 'qa_ok', action: 'Avis QA : Conforme', user: 'Marie Lambert', date: '27 nov. 16:15' },
     { type: 'modified', action: 'Description modifiée', user: 'Jean Dupont', date: '26 nov. 11:00', diff: [
@@ -3849,14 +3851,15 @@ const URSDetailContent = ({ urs, userRole = 'metier' }) => {
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header avec ID et priorité */}
+      {/* Header avec ID */}
       <div style={{ padding: '16px 20px', backgroundColor: colors.primaryLight, borderBottom: `1px solid ${colors.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.primary, backgroundColor: 'white', padding: '4px 10px', borderRadius: '6px' }}>{urs.id}</span>
-          {isValidated && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.successLight, color: colors.success }}>✓ Validé</span>}
-          {isQaOk && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E0F2FE', color: '#0369A1' }}>🔬 QA OK</span>}
+          <span style={{ fontSize: '13px', fontWeight: 700, color: colors.primary, backgroundColor: 'white', padding: '4px 10px', borderRadius: '6px' }}>{autoId}</span>
+          {isNew && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.accentLight, color: colors.primaryDark }}>Nouvelle</span>}
+          {!isNew && isValidated && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.successLight, color: colors.success }}>✓ Validé</span>}
+          {!isNew && isQaOk && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E0F2FE', color: '#0369A1' }}>🔬 QA OK</span>}
         </div>
-        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: colors.textPrimary }}>{urs.title}</h3>
+        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: colors.textPrimary }}>{isNew ? (editData.title || 'Nouvelle exigence') : urs.title}</h3>
       </div>
       
       {/* Tabs */}
@@ -3968,12 +3971,6 @@ const URSDetailContent = ({ urs, userRole = 'metier' }) => {
       </div>
       
       {/* Zone du bas selon l'onglet */}
-      {activeTab === 'details' && (
-        <CopilotChat 
-          contextId={urs.id} 
-          suggestions={['Reformuler', 'Vérifier doublons', 'Rendre testable']} 
-        />
-      )}
       {activeTab === 'discussion' && (
         <CommentModule onPost={handlePostComment} />
       )}
@@ -4038,7 +4035,7 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary, margin: '0 0 4px 0' }}>Besoins métier (URS)</h1>
-            <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{totalURS} exigences • {validatedCount} validées métier • {qaOkCount} avis QA OK</p>
+            <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{totalURS} exigences • <span style={{ color: colors.success, fontWeight: 600 }}>{validatedCount} validées</span> • <span style={{ color: '#0369A1', fontWeight: 600 }}>{qaOkCount} QA OK</span> • <span style={{ color: colors.warning, fontWeight: 600 }}>{totalURS - validatedCount} en attente</span></p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {/* Analyse critique */}
@@ -4066,22 +4063,6 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         onRequestApproval={() => console.log('Demande de validation envoyée')}
         onOpenDetails={() => setShowDetailPanel(true)}
       />
-      
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: `1px solid ${colors.border}` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary }}>{totalURS}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>Total URS</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: colors.successLight, borderRadius: '10px', border: `1px solid ${colors.success}30` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.success }}>{validatedCount}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>Validées</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: colors.warningLight, borderRadius: '10px', border: `1px solid ${colors.warning}30` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.warning }}>{totalURS - validatedCount}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>En attente</div>
-        </div>
-      </div>
       
       {/* FilterBar */}
       <FilterBar
@@ -4123,7 +4104,7 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
       <SidePanel
         isOpen={!!selectedURS}
         onClose={() => setSelectedURS(null)}
-        title={selectedURS?._isNew ? 'Nouvelle URS' : (selectedURS?.id || '')}
+        title={selectedURS?._isNew ? `URS-${String(ursData.length + 1).padStart(3, '0')}` : (selectedURS?.id || '')}
         subtitle=""
         width="450px"
       >
@@ -4482,18 +4463,20 @@ const FRAFeatureMap = ({ data, selectedFS, onSelectFS, calculatePriority }) => {
 
 // Panneau détail FS (contenu du drawer)
 const FSDetailContent = ({ fs, userRole = 'metier' }) => {
+  const isNew = fs._isNew;
+  const autoId = isNew ? `FS-${String(fsData.length + 1).padStart(3, '0')}` : fs.id;
   const [activeTab, setActiveTab] = useState('details');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isNew);
   const [editData, setEditData] = useState({ title: fs.title, description: fs.description });
   const [isValidated, setIsValidated] = useState(fs.status === 'validated');
   const [isQaOk, setIsQaOk] = useState(fs.qaReviewed);
-  const [comments, setComments] = useState([
+  const [comments, setComments] = useState(isNew ? [] : [
     { user: 'Marie Lambert', role: 'QA', time: 'Hier 16:30', message: 'La description de la complexité des mots de passe est conforme à notre politique de sécurité.', type: 'qa', avatar: 'ML' },
     { user: 'Jean Dupont', role: 'UPM', time: 'Hier 14:15', message: 'Pouvons-nous préciser la durée d\'expiration de session pour le SSO ?', type: 'question', avatar: 'JD' },
   ]);
 
   // Historique avec diffs
-  const historyEvents = [
+  const historyEvents = isNew ? [] : [
     { type: 'qa_ok', action: 'Avis QA : Conforme', user: 'Marie Lambert', date: '28 nov. 16:30' },
     { type: 'modified', action: 'Passage en revue', user: 'Jean Dupont', date: '27 nov. 14:15', diff: [
       { field: 'Statut', old: 'Brouillon', new: 'En revue' }
@@ -4502,7 +4485,7 @@ const FSDetailContent = ({ fs, userRole = 'metier' }) => {
       { field: 'Description', old: 'Le système gère l\'authentification.', new: fs.description }
     ]},
     { type: 'created', action: 'Généré depuis URS par IA', user: 'Copilot', date: '26 nov. 10:00', diff: [
-      { field: 'URS sources', new: fs.linkedURS.map(u => u.id).join(', ') }
+      { field: 'URS sources', new: isNew ? '' : fs.linkedURS.map(u => u.id).join(', ') }
     ]},
   ];
 
@@ -4532,13 +4515,14 @@ const FSDetailContent = ({ fs, userRole = 'metier' }) => {
       {/* Header */}
       <div style={{ padding: '16px 20px', backgroundColor: colors.primaryLight, borderBottom: `1px solid ${colors.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: 'white', backgroundColor: colors.primary, padding: '4px 10px', borderRadius: '6px' }}>{fs.id}</span>
-          <FSStatusBadge status={fs.status} />
-          {isValidated && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.successLight, color: colors.success }}>✓ Validé</span>}
-          {isQaOk && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E0F2FE', color: '#0369A1' }}>🔬 QA OK</span>}
+          <span style={{ fontSize: '13px', fontWeight: 700, color: 'white', backgroundColor: colors.primary, padding: '4px 10px', borderRadius: '6px' }}>{autoId}</span>
+          {isNew && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.accentLight, color: colors.primaryDark }}>Nouvelle</span>}
+          {!isNew && <FSStatusBadge status={fs.status} />}
+          {!isNew && isValidated && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.successLight, color: colors.success }}>✓ Validé</span>}
+          {!isNew && isQaOk && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E0F2FE', color: '#0369A1' }}>🔬 QA OK</span>}
         </div>
-        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: colors.textPrimary }}>{fs.title}</h3>
-        <span style={{ display: 'inline-block', marginTop: '8px', padding: '3px 8px', backgroundColor: 'white', borderRadius: '4px', fontSize: '11px', color: colors.textSecondary }}>📁 {fs.category}</span>
+        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: colors.textPrimary }}>{isNew ? (editData.title || 'Nouvelle spécification') : fs.title}</h3>
+        {!isNew && <span style={{ display: 'inline-block', marginTop: '8px', padding: '3px 8px', backgroundColor: 'white', borderRadius: '4px', fontSize: '11px', color: colors.textSecondary }}>📁 {fs.category}</span>}
       </div>
       
       {/* Tabs */}
@@ -4579,20 +4563,22 @@ const FSDetailContent = ({ fs, userRole = 'metier' }) => {
             </div>
             
             {/* URS liées */}
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><Icons.Link /> URS liées ({fs.linkedURS.length})</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {fs.linkedURS.map(urs => (
-                  <div key={urs.id} style={{ padding: '10px 12px', backgroundColor: colors.background, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                    <div>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: colors.primary, marginRight: '8px' }}>{urs.id}</span>
-                      <span style={{ fontSize: '13px', color: colors.textPrimary }}>{urs.title}</span>
+            {fs.linkedURS && fs.linkedURS.length > 0 && (
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 600, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><Icons.Link /> URS liées ({fs.linkedURS.length})</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {fs.linkedURS.map(urs => (
+                    <div key={urs.id} style={{ padding: '10px 12px', backgroundColor: colors.background, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                      <div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: colors.primary, marginRight: '8px' }}>{urs.id}</span>
+                        <span style={{ fontSize: '13px', color: colors.textPrimary }}>{urs.title}</span>
+                      </div>
+                      <Icons.ExternalLink style={{ color: colors.textSecondary, width: 16, height: 16 }} />
                     </div>
-                    <Icons.ExternalLink style={{ color: colors.textSecondary, width: 16, height: 16 }} />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             
             {/* Boutons d'action */}
             <DetailActionButtons 
@@ -4633,12 +4619,6 @@ const FSDetailContent = ({ fs, userRole = 'metier' }) => {
       </div>
       
       {/* Zone du bas selon l'onglet */}
-      {activeTab === 'details' && (
-        <CopilotChat 
-          contextId={fs.id} 
-          suggestions={['Enrichir description', 'Vérifier cohérence', 'Générer tests']} 
-        />
-      )}
       {activeTab === 'discussion' && (
         <CommentModule onPost={handlePostComment} />
       )}
@@ -4704,7 +4684,7 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary, margin: '0 0 4px 0' }}>Spécifications Fonctionnelles</h1>
-            <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{fsData.length} spécifications • {validatedCount} validées • {qaReviewedCount} revues QA</p>
+            <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{fsData.length} spécifications • <span style={{ color: colors.success, fontWeight: 600 }}>{validatedCount} validées</span> • <span style={{ color: colors.primary, fontWeight: 600 }}>{fsData.filter(f => f.status === 'review').length} en revue</span> • <span style={{ color: '#0369A1', fontWeight: 600 }}>{qaReviewedCount} QA OK</span></p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {/* Analyse critique */}
@@ -4715,7 +4695,7 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
               onLaunchAnalysis={onNavigateToAnalysis}
             />
             <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Générer depuis URS</button>
-            <button style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Plus /> Nouvelle FS</button>
+            <button onClick={() => { setSelectedFS({ id: '', title: '', description: '', category: '', categoryId: 'security', status: 'draft', qaReviewed: false, linkedURS: [], _isNew: true }); }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Plus /> Nouvelle FS</button>
           </div>
         </div>
       </div>
@@ -4732,26 +4712,6 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         onRequestApproval={() => console.log('Demande de validation envoyée')}
         onOpenDetails={() => setShowDetailPanel(true)}
       />
-      
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: `1px solid ${colors.border}` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary }}>{fsData.length}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>Total FS</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: colors.successLight, borderRadius: '10px', border: `1px solid ${colors.success}30` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.success }}>{validatedCount}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>Validées</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: colors.primaryLight, borderRadius: '10px', border: `1px solid ${colors.primary}30` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.primary }}>{fsData.filter(f => f.status === 'review').length}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>En revue</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: '#E0F2FE', borderRadius: '10px', border: '1px solid #0369A130' }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0369A1' }}>{qaReviewedCount}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>Revues QA</div>
-        </div>
-      </div>
       
       {/* FilterBar */}
       <FilterBar
@@ -4788,7 +4748,7 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
       )}
       
       {/* Side Panel */}
-      <SidePanel isOpen={!!selectedFS} onClose={() => setSelectedFS(null)} title={selectedFS?.id || ''} width="450px">
+      <SidePanel isOpen={!!selectedFS} onClose={() => setSelectedFS(null)} title={selectedFS?._isNew ? `FS-${String(fsData.length + 1).padStart(3, '0')}` : (selectedFS?.id || '')} width="450px">
         {selectedFS && <FSDetailContent fs={selectedFS} userRole={userRole} />}
       </SidePanel>
       
@@ -5153,12 +5113,6 @@ const FRADetailContent = ({ fs, onUpdateRisks, userRole = 'qualite' }) => {
       </div>
 
       {/* Zone du bas selon l'onglet */}
-      {activeTab === 'details' && (
-        <CopilotChat 
-          contextId={`${fs.id} / Risque ${activeRiskIndex + 1}`} 
-          suggestions={['Justifier la severity', 'Comparer aux standards', 'Suggérer mitigation']} 
-        />
-      )}
       {activeTab === 'discussion' && (
         <CommentModule onPost={handlePostComment} />
       )}
@@ -5244,7 +5198,7 @@ const FRAContent = ({ userRole = 'qualite' }) => {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary, margin: '0 0 4px 0' }}>Analyse des risques (FRA)</h1>
-            <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>Évaluation des risques pour {fraData.length} spécifications fonctionnelles</p>
+            <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{fraData.length} spécifications • <span style={{ color: colors.error, fontWeight: 600 }}>{stats.high} High</span> • <span style={{ color: colors.warning, fontWeight: 600 }}>{stats.medium} Medium</span> • <span style={{ color: colors.success, fontWeight: 600 }}>{stats.low} Low</span> • <span style={{ fontWeight: 600 }}>{stats.validated}/{fraData.length} validées</span></p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Download /> Exporter</button>
@@ -5266,30 +5220,6 @@ const FRAContent = ({ userRole = 'qualite' }) => {
         onOpenDetails={() => setShowDetailPanel(true)}
       />
 
-      {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginBottom: '8px' }}>Priorité High</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: colors.error }}>{stats.high}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginTop: '4px' }}>FS avec risque élevé</div>
-        </div>
-        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginBottom: '8px' }}>Priorité Medium</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: colors.warning }}>{stats.medium}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginTop: '4px' }}>FS avec risque moyen</div>
-        </div>
-        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginBottom: '8px' }}>Priorité Low</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: colors.success }}>{stats.low}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginTop: '4px' }}>FS avec risque faible</div>
-        </div>
-        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-          <div style={{ fontSize: '12px', color: colors.textSecondary, marginBottom: '8px' }}>Évaluations validées</div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: colors.textPrimary }}>{stats.validated}/{fraData.length}</div>
-          <div style={{ height: '4px', backgroundColor: colors.border, borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}><div style={{ width: `${(stats.validated / fraData.length) * 100}%`, height: '100%', backgroundColor: colors.success }} /></div>
-        </div>
-      </div>
-
       {/* FilterBar */}
       <FilterBar
         categories={fraCategoryTabs}
@@ -5307,18 +5237,6 @@ const FRAContent = ({ userRole = 'qualite' }) => {
       {/* Vue Liste */}
       {viewMode === 'list' && (
         <>
-          {/* Barre validation */}
-          <div style={{ padding: '16px 20px', backgroundColor: stats.validated === fraData.length ? colors.successLight : colors.background, borderRadius: '12px', border: `1px solid ${stats.validated === fraData.length ? colors.success : colors.border}`, marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: stats.validated === fraData.length ? colors.success : colors.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}><Icons.Shield /></div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>{stats.validated === fraData.length ? 'Toutes les évaluations validées' : `${fraData.length - stats.validated} évaluation(s) en attente`}</div>
-                <div style={{ fontSize: '13px', color: colors.textSecondary }}>La validation permettra de passer aux tests</div>
-              </div>
-            </div>
-            <button style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.CheckCircle /> Valider toutes</button>
-          </div>
-
           {/* Tableau */}
           <div style={{ backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 100px 100px 120px', padding: '14px 20px', backgroundColor: colors.background, borderBottom: `1px solid ${colors.border}`, fontSize: '11px', fontWeight: 600, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
