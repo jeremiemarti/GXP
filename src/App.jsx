@@ -3655,6 +3655,145 @@ const DetailActionButtons = ({
 };
 
 // =============================================================================
+// MODALE DE GÉNÉRATION IA (URS / FS / FRA)
+// =============================================================================
+
+const AIGenerationModal = ({ isOpen, onClose, title, subtitle, sourceLabel, results, onApply }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [selected, setSelected] = useState({});
+  const [loadingMessage, setLoadingMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoading(true);
+      setSelected({});
+      const messages = [
+        'Analyse des documents sources...',
+        'Extraction des données pertinentes...',
+        'Génération des propositions...',
+        'Calcul des scores de confiance...',
+      ];
+      let i = 0;
+      setLoadingMessage(messages[0]);
+      const interval = setInterval(() => {
+        i++;
+        if (i < messages.length) {
+          setLoadingMessage(messages[i]);
+        } else {
+          clearInterval(interval);
+          setIsLoading(false);
+          const initial = {};
+          results.forEach(r => { initial[r.id] = true; });
+          setSelected(initial);
+        }
+      }, 600);
+      return () => clearInterval(interval);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const selectedCount = Object.values(selected).filter(Boolean).length;
+  const allSelected = results.length > 0 && selectedCount === results.length;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected({});
+    } else {
+      const all = {};
+      results.forEach(r => { all[r.id] = true; });
+      setSelected(all);
+    }
+  };
+
+  const confidenceConfig = (c) => c >= 75
+    ? { bg: colors.successLight, color: colors.success, border: colors.success }
+    : c >= 50
+    ? { bg: colors.warningLight, color: colors.warning, border: colors.warning }
+    : { bg: colors.errorLight, color: colors.error, border: colors.error };
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={onClose} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' }} />
+      <div style={{ position: 'relative', backgroundColor: 'white', borderRadius: '16px', width: '640px', maxWidth: '90vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        {/* Header */}
+        <div style={{ padding: '24px 24px 16px', borderBottom: `1px solid ${colors.border}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: colors.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.accent }}><Icons.Sparkles /></div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: colors.textPrimary }}>{title}</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: colors.textSecondary }}>{subtitle}</p>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textSecondary, fontSize: '16px' }}>✕</button>
+          </div>
+          {!isLoading && (
+            <div style={{ marginTop: '12px', padding: '8px 12px', backgroundColor: colors.background, borderRadius: '8px', fontSize: '12px', color: colors.textSecondary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Icons.Info /> Sources : {sourceLabel}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
+          {isLoading ? (
+            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: `3px solid ${colors.border}`, borderTopColor: colors.primary, margin: '0 auto 20px', animation: 'spin 1s linear infinite' }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <p style={{ fontSize: '15px', fontWeight: 600, color: colors.textPrimary, margin: '0 0 8px' }}>{loadingMessage}</p>
+              <p style={{ fontSize: '13px', color: colors.textSecondary, margin: 0 }}>Veuillez patienter...</p>
+            </div>
+          ) : (
+            <>
+              {/* Select all */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '12px', borderBottom: `1px solid ${colors.border}` }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: colors.textPrimary }}>
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ width: '16px', height: '16px', accentColor: colors.primary, cursor: 'pointer' }} />
+                  Tout sélectionner
+                </label>
+                <span style={{ fontSize: '12px', color: colors.textSecondary }}>{selectedCount} / {results.length} sélectionnés</span>
+              </div>
+
+              {/* Results list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {results.map(r => {
+                  const cfg = confidenceConfig(r.confidence);
+                  return (
+                    <div key={r.id} style={{ padding: '12px 14px', backgroundColor: selected[r.id] ? 'white' : colors.background, borderRadius: '10px', border: `1px solid ${selected[r.id] ? colors.primary + '40' : colors.border}`, opacity: selected[r.id] ? 1 : 0.6, transition: 'all 0.15s' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <input type="checkbox" checked={!!selected[r.id]} onChange={() => setSelected(prev => ({ ...prev, [r.id]: !prev[r.id] }))} style={{ marginTop: '2px', width: '16px', height: '16px', accentColor: colors.primary, cursor: 'pointer', flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: colors.primary, backgroundColor: colors.primaryLight, padding: '2px 8px', borderRadius: '4px' }}>{r.id}</span>
+                            <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: cfg.bg, color: cfg.color, fontSize: '11px', fontWeight: 600 }}>Confiance : {r.confidence}%</span>
+                            {r.badge && <span style={{ fontSize: '11px', color: colors.textSecondary, backgroundColor: colors.background, padding: '2px 6px', borderRadius: '4px' }}>{r.badge}</span>}
+                          </div>
+                          <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 600, color: colors.textPrimary }}>{r.title}</p>
+                          {r.detail && <p style={{ margin: 0, fontSize: '12px', color: colors.textSecondary, lineHeight: 1.4 }}>{r.detail}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        {!isLoading && (
+          <div style={{ padding: '16px 24px', borderTop: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', cursor: 'pointer', fontSize: '13px', color: colors.textSecondary }}>Annuler</button>
+            <button onClick={() => { onApply(Object.keys(selected).filter(k => selected[k])); onClose(); }} disabled={selectedCount === 0} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', backgroundColor: selectedCount > 0 ? colors.primary : colors.border, color: 'white', cursor: selectedCount > 0 ? 'pointer' : 'default', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Check /> Appliquer la sélection ({selectedCount})</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
 // BARRE DE FILTRES UNIFIÉE (URS / FS / FRA)
 // =============================================================================
 
@@ -3988,7 +4127,16 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
   const [activeFilters, setActiveFilters] = useState({});
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [criticalAnalysisStatus, setCriticalAnalysisStatus] = useState('ok'); // 'none' | 'obsolete' | 'ok' | 'issues'
+
+  const ursGenerationResults = [
+    { id: `URS-${String(ursData.length + 1).padStart(3, '0')}`, title: 'Gestion des sessions inactives', detail: 'Le système doit déconnecter automatiquement les utilisateurs après 15 min d\'inactivité. Source : CdC v2.1, p.14', confidence: 91, badge: '🔐 Identités' },
+    { id: `URS-${String(ursData.length + 2).padStart(3, '0')}`, title: 'Export des données au format CSV', detail: 'Le système doit permettre l\'export de toutes les données tabulaires au format CSV. Source : CdC v2.1, p.22', confidence: 87, badge: '📊 Données' },
+    { id: `URS-${String(ursData.length + 3).padStart(3, '0')}`, title: 'Notifications par email', detail: 'Le système doit envoyer des notifications par email lors de changements de statut. Source : CdC v2.1, p.18', confidence: 74, badge: '🔗 Intégrations' },
+    { id: `URS-${String(ursData.length + 4).padStart(3, '0')}`, title: 'Archivage automatique des données', detail: 'Les données de plus de 5 ans doivent être archivées automatiquement. Source : Audit interne 2024, p.8', confidence: 68, badge: '📊 Données' },
+    { id: `URS-${String(ursData.length + 5).padStart(3, '0')}`, title: 'Conformité 21 CFR Part 11', detail: 'Le système doit être conforme aux exigences 21 CFR Part 11. Source : CdC v2.1, p.3', confidence: 45, badge: '📋 Traçabilité' },
+  ];
   
   const getFilteredURS = () => {
     let items = ursData;
@@ -4045,7 +4193,7 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
               findings={criticalAnalysisStatus === 'issues' ? 3 : 0}
               onLaunchAnalysis={onNavigateToAnalysis}
             />
-            <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Extraire des documents</button>
+            <button onClick={() => setShowGenerateModal(true)} style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Générer depuis documents</button>
             <button onClick={() => { setSelectedURS({ id: '', title: '', description: '', categoryId: 'identity', validated: false, qaOpinion: null, linkedFS: [], _isNew: true }); }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Plus /> Nouvelle URS</button>
           </div>
         </div>
@@ -4127,6 +4275,17 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         onConfirm={handleReopen}
         stepName="Besoins métier (URS)"
         cascadeSteps={['FS - Spécifications Fonctionnelles', 'FRA - Analyse des Risques']}
+      />
+
+      {/* Modale génération IA */}
+      <AIGenerationModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        title="Générer des URS depuis documents"
+        subtitle="Extraction automatique des exigences métier"
+        sourceLabel="Cahier des charges v2.1, Audit interne 2024"
+        results={ursGenerationResults}
+        onApply={(ids) => console.log('URS générées:', ids)}
       />
     </div>
   );
@@ -4636,7 +4795,15 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
   const [validationStatus, setValidationStatus] = useState('validated'); // Pour la démo, FS est validée
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [criticalAnalysisStatus, setCriticalAnalysisStatus] = useState('issues'); // Pour la démo, 2 findings
+
+  const fsGenerationResults = [
+    { id: `FS-${String(fsData.length + 1).padStart(3, '0')}`, title: 'Timeout de session configurable', detail: 'Depuis URS-001, URS-003 • Catégorie : Sécurité & Accès', confidence: 92, badge: '🔐 Sécurité' },
+    { id: `FS-${String(fsData.length + 2).padStart(3, '0')}`, title: 'Export CSV des rapports d\'audit', detail: 'Depuis URS-005, URS-009 • Catégorie : Traçabilité', confidence: 85, badge: '📋 Traçabilité' },
+    { id: `FS-${String(fsData.length + 3).padStart(3, '0')}`, title: 'Notification email sur changement de statut', detail: 'Depuis URS-007 • Catégorie : Intégrations', confidence: 78, badge: '🔗 Intégrations' },
+    { id: `FS-${String(fsData.length + 4).padStart(3, '0')}`, title: 'Archivage automatique après 5 ans', detail: 'Depuis URS-010 • Catégorie : Gestion des données', confidence: 65, badge: '📊 Données' },
+  ];
 
   const getFilteredFS = () => {
     let items = fsData;
@@ -4694,7 +4861,7 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
               findings={criticalAnalysisStatus === 'issues' ? 2 : 0}
               onLaunchAnalysis={onNavigateToAnalysis}
             />
-            <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Générer depuis URS</button>
+            <button onClick={() => setShowGenerateModal(true)} style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Générer depuis URS</button>
             <button onClick={() => { setSelectedFS({ id: '', title: '', description: '', category: '', categoryId: 'security', status: 'draft', qaReviewed: false, linkedURS: [], _isNew: true }); }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Plus /> Nouvelle FS</button>
           </div>
         </div>
@@ -4768,6 +4935,17 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         onConfirm={handleReopen}
         stepName="Spécifications Fonctionnelles (FS)"
         cascadeSteps={['FRA - Analyse des Risques']}
+      />
+
+      {/* Modale génération IA */}
+      <AIGenerationModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        title="Générer des FS depuis les URS"
+        subtitle="Création automatique de spécifications fonctionnelles"
+        sourceLabel={`${ursData.filter(u => u.validated).length} URS validées, Documentation projet`}
+        results={fsGenerationResults}
+        onApply={(ids) => console.log('FS générées:', ids)}
       />
     </div>
   );
@@ -5130,6 +5308,18 @@ const FRAContent = ({ userRole = 'qualite' }) => {
   const [activeFilters, setActiveFilters] = useState({});
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+
+  const fraGenerationResults = fraData.map(fs => {
+    const maxP = (() => { let m = 'L'; fs.risks.forEach(r => { const rc = calculateRiskClass(r.aiSeverity || r.severity, r.aiLikelihood || r.likelihood); const p = calculateRiskPriority(rc, r.aiDetectability || r.detectability); if (p === 'H') m = 'H'; else if (p === 'M' && m !== 'H') m = 'M'; }); return m; })();
+    return {
+      id: fs.id,
+      title: fs.title,
+      detail: `${fs.risks.length} risque(s) • S:${fs.risks[0]?.aiSeverity || 'M'} L:${fs.risks[0]?.aiLikelihood || 'M'} D:${fs.risks[0]?.aiDetectability || 'M'} → Priorité ${maxP}`,
+      confidence: maxP === 'H' ? 88 : maxP === 'M' ? 76 : 92,
+      badge: `Priorité ${maxP}`,
+    };
+  });
 
   const getMaxPriority = (risks) => {
     let max = 'L';
@@ -5202,7 +5392,7 @@ const FRAContent = ({ userRole = 'qualite' }) => {
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Download /> Exporter</button>
-            <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Pré-évaluer par IA</button>
+            <button onClick={() => setShowGenerateModal(true)} style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Pré-évaluer les risques</button>
           </div>
         </div>
       </div>
@@ -5287,6 +5477,17 @@ const FRAContent = ({ userRole = 'qualite' }) => {
         onConfirm={handleReopen}
         stepName="Analyse des Risques (FRA)"
         cascadeSteps={[]}
+      />
+
+      {/* Modale génération IA */}
+      <AIGenerationModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        title="Pré-évaluation des risques"
+        subtitle="Scoring automatique Severity / Likelihood / Detectability"
+        sourceLabel={`${fsData.length} FS, ${ursData.length} URS, Plan de validation (SVP)`}
+        results={fraGenerationResults}
+        onApply={(ids) => console.log('Risques évalués:', ids)}
       />
     </div>
   );
