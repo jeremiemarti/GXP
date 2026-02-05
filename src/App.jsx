@@ -788,12 +788,12 @@ const gxpDefinitions = {
 
 // Catégories de risques GxP
 const riskCategories = [
-  { id: 'data_loss', label: 'Perte, altération ou indisponibilité des données' },
-  { id: 'functionality', label: 'Fonctionnalités et utilisation du système non maîtrisées' },
-  { id: 'records', label: 'Enregistrements indisponibles, incorrects ou incomplets' },
-  { id: 'data_source', label: 'Source de données non maîtrisée' },
-  { id: 'compliance', label: 'Non-conformité aux exigences légales et réglementaires' },
-  { id: 'documentation', label: 'Documentation obsolète ou incorrecte' },
+  { id: 'data_loss', label: 'Perte, altération ou indisponibilité des données', shortLabel: 'Perte données' },
+  { id: 'functionality', label: 'Fonctionnalités et utilisation du système non maîtrisées', shortLabel: 'Fonctionnalités' },
+  { id: 'records', label: 'Enregistrements indisponibles, incorrects ou incomplets', shortLabel: 'Enregistrements' },
+  { id: 'data_source', label: 'Source de données non maîtrisée', shortLabel: 'Source données' },
+  { id: 'compliance', label: 'Non-conformité aux exigences légales et réglementaires', shortLabel: 'Conformité' },
+  { id: 'documentation', label: 'Documentation obsolète ou incorrecte', shortLabel: 'Documentation' },
 ];
 
 // Matrices de calcul
@@ -2958,7 +2958,6 @@ const DynamicSection = ({ title, icon: Icon, sections, onAdd, onRemove, onUpdate
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={handleGenerate} disabled={isGenerating} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isGenerating ? 0.7 : 1 }}><Icons.Sparkles /> {isGenerating ? 'Analyse...' : 'Proposition IA'}</button>
           <div style={{ position: 'relative' }}>
             <button onClick={() => setShowAddMenu(!showAddMenu)} style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', color: colors.textPrimary, fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Plus /> Ajouter</button>
             {showAddMenu && (
@@ -2979,6 +2978,9 @@ const DynamicSection = ({ title, icon: Icon, sections, onAdd, onRemove, onUpdate
       </div>
       {isExpanded && (
         <div style={{ padding: '20px' }}>
+          <div style={{ marginBottom: '12px' }}>
+            <button onClick={handleGenerate} disabled={isGenerating} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isGenerating ? 0.7 : 1 }}><Icons.Sparkles /> {isGenerating ? 'Analyse...' : 'Proposition IA'}</button>
+          </div>
           {showProposal && (
             <AIProposalPanel isLoading={isGenerating} proposal={aiProposal} confidence={aiConfidence} lowConfidenceReason={aiLowReason} onApply={() => { onGenerate('apply'); setShowProposal(false); }} />
           )}
@@ -3033,12 +3035,14 @@ const StrategyPanel = ({ strategy, onStrategyChange }) => {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={handleAnalyze} disabled={isAnalyzing} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isAnalyzing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isAnalyzing ? 0.7 : 1 }}><Icons.Sparkles />{isAnalyzing ? 'Analyse...' : 'Proposition IA'}</button>
           <span style={{ color: colors.textSecondary, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}</span>
         </div>
       </div>
       {isExpanded && (
         <div style={{ padding: '20px' }}>
+          <div style={{ marginBottom: '12px' }}>
+            <button onClick={handleAnalyze} disabled={isAnalyzing} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isAnalyzing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isAnalyzing ? 0.7 : 1 }}><Icons.Sparkles />{isAnalyzing ? 'Analyse...' : 'Proposition IA'}</button>
+          </div>
           {showAIPanel && (
             <AIProposalPanel isLoading={isAnalyzing} proposal={aiResponse?.reasoning} confidence={aiResponse?.confidence || 0} onApply={() => { onStrategyChange(aiResponse.recommendation); setShowAIPanel(false); }} applyLabel="Appliquer cette proposition" />
           )}
@@ -3651,6 +3655,80 @@ const DetailActionButtons = ({
 };
 
 // =============================================================================
+// BARRE DE FILTRES UNIFIÉE (URS / FS / FRA)
+// =============================================================================
+
+const FilterBar = ({ categories, selectedCategory, onSelectCategory, viewMode, onViewModeChange, searchQuery, onSearchChange, filters, activeFilters, onFilterChange }) => {
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const activeFilterCount = activeFilters ? Object.values(activeFilters).filter(v => v && v !== 'all').length : 0;
+
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        {/* Onglets catégories */}
+        <div style={{ display: 'flex', gap: '6px', flex: 1, flexWrap: 'wrap' }}>
+          {categories.map(cat => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <button key={cat.id} onClick={() => onSelectCategory(cat.id)} style={{ padding: '7px 12px', borderRadius: '20px', border: isActive ? `2px solid ${colors.primary}` : `1px solid ${colors.border}`, backgroundColor: isActive ? colors.primaryLight : 'white', cursor: 'pointer', fontSize: '12px', fontWeight: isActive ? 600 : 400, color: isActive ? colors.primary : colors.textSecondary, display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
+                {cat.icon && <span>{cat.icon}</span>}{cat.shortLabel || cat.label}
+                {cat.count != null && <span style={{ padding: '1px 5px', backgroundColor: isActive ? colors.primary : colors.background, color: isActive ? 'white' : colors.textSecondary, borderRadius: '10px', fontSize: '10px', fontWeight: 600 }}>{cat.count}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Actions droite */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Toggle vue Liste/Carte */}
+          <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '8px', padding: '3px', border: `1px solid ${colors.border}` }}>
+            <button onClick={() => onViewModeChange('list')} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'list' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: viewMode === 'list' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'list' ? 600 : 400 }}><Icons.List /> Liste</button>
+            <button onClick={() => onViewModeChange('map')} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'map' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: viewMode === 'map' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'map' ? 600 : 400 }}><Icons.Layers /> Carte</button>
+          </div>
+          {/* Recherche */}
+          <button onClick={() => setShowSearch(!showSearch)} style={{ padding: '7px 10px', borderRadius: '8px', border: `1px solid ${showSearch ? colors.primary : colors.border}`, backgroundColor: showSearch ? colors.primaryLight : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', color: showSearch ? colors.primary : colors.textSecondary }}><Icons.Search /></button>
+          {/* Filtres */}
+          {filters && filters.length > 0 && (
+            <button onClick={() => setShowFilters(!showFilters)} style={{ padding: '7px 10px', borderRadius: '8px', border: `1px solid ${showFilters ? colors.primary : colors.border}`, backgroundColor: showFilters ? colors.primaryLight : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: showFilters ? colors.primary : colors.textSecondary }}>
+              <Icons.Filter /> Filtres{activeFilterCount > 0 && <span style={{ padding: '1px 6px', backgroundColor: colors.primary, color: 'white', borderRadius: '10px', fontSize: '10px', fontWeight: 600 }}>{activeFilterCount}</span>}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Barre de recherche expandable */}
+      {showSearch && (
+        <div style={{ marginTop: '10px' }}>
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
+            <input type="text" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} placeholder="Rechercher..." autoFocus style={{ width: '100%', padding: '10px 12px 10px 40px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '13px', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }} />
+          </div>
+        </div>
+      )}
+
+      {/* Zone filtres expandable */}
+      {showFilters && filters && (
+        <div style={{ marginTop: '10px', padding: '12px 16px', backgroundColor: 'white', borderRadius: '8px', border: `1px solid ${colors.border}`, display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {filters.map(f => (
+            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary }}>{f.label}</label>
+              <select value={activeFilters?.[f.id] || 'all'} onChange={(e) => onFilterChange(f.id, e.target.value)} style={{ padding: '4px 8px', borderRadius: '6px', border: `1px solid ${colors.border}`, fontSize: '12px', color: colors.textPrimary, cursor: 'pointer', outline: 'none' }}>
+                <option value="all">Tous</option>
+                {f.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+          ))}
+          {activeFilterCount > 0 && (
+            <button onClick={() => filters.forEach(f => onFilterChange(f.id, 'all'))} style={{ fontSize: '12px', color: colors.primary, backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 500 }}>Réinitialiser</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================================================
 // PAGE: BESOINS MÉTIER (URS)
 // =============================================================================
 
@@ -3691,7 +3769,6 @@ const URSRow = ({ urs, onClick }) => (
         <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600, color: colors.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{urs.title}</h4>
         <p style={{ margin: 0, fontSize: '13px', color: colors.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.4 }}>{urs.description}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
-          <MoscowBadge priority={urs.priority} />
           {urs.linkedFS && urs.linkedFS.length > 0 && <span style={{ fontSize: '11px', color: colors.textSecondary, display: 'flex', alignItems: 'center', gap: '4px' }}><Icons.Link /> {urs.linkedFS.length} FS</span>}
           {urs.source && <span style={{ fontSize: '11px', color: colors.textSecondary, display: 'flex', alignItems: 'center', gap: '4px' }}><Icons.FileText /> {urs.source.doc}</span>}
         </div>
@@ -3776,7 +3853,6 @@ const URSDetailContent = ({ urs, userRole = 'metier' }) => {
       <div style={{ padding: '16px 20px', backgroundColor: colors.primaryLight, borderBottom: `1px solid ${colors.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '13px', fontWeight: 700, color: colors.primary, backgroundColor: 'white', padding: '4px 10px', borderRadius: '6px' }}>{urs.id}</span>
-          <MoscowBadge priority={urs.priority} />
           {isValidated && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: colors.successLight, color: colors.success }}>✓ Validé</span>}
           {isQaOk && <span style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E0F2FE', color: '#0369A1' }}>🔬 QA OK</span>}
         </div>
@@ -3908,19 +3984,27 @@ const URSDetailContent = ({ urs, userRole = 'metier' }) => {
 // Contenu page URS
 const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState(['identity', 'audit', 'data']);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedURS, setSelectedURS] = useState(null);
-  const [validationStatus, setValidationStatus] = useState('signed'); // Pour la démo, URS est signé
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'map'
+  const [validationStatus, setValidationStatus] = useState('signed');
+  const [viewMode, setViewMode] = useState('list');
+  const [activeFilters, setActiveFilters] = useState({});
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [criticalAnalysisStatus, setCriticalAnalysisStatus] = useState('ok'); // 'none' | 'obsolete' | 'ok' | 'issues'
   
-  const toggleCategory = (catId) => {
-    setExpandedCategories(prev => prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]);
+  const getFilteredURS = () => {
+    let items = ursData;
+    if (selectedCategory !== 'all') items = items.filter(u => u.categoryId === selectedCategory);
+    if (searchQuery) items = items.filter(u => u.title.toLowerCase().includes(searchQuery.toLowerCase()) || u.id.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (activeFilters.status === 'validated') items = items.filter(u => u.validated);
+    if (activeFilters.status === 'pending') items = items.filter(u => !u.validated);
+    return items;
   };
-  
-  const getURSByCategory = (catId) => ursData.filter(u => u.categoryId === catId);
+
+  const ursCategoryTabs = [{ id: 'all', label: 'Toutes les URS', count: ursData.length }, ...ursCategories.map(c => ({ ...c, count: ursData.filter(u => u.categoryId === c.id).length }))];
+
+  const ursFilters = [{ id: 'status', label: 'Statut', options: [{ value: 'validated', label: 'Validées' }, { value: 'pending', label: 'En attente' }] }];
   
   const totalURS = ursData.length;
   const validatedCount = ursData.filter(u => u.validated).length;
@@ -3957,20 +4041,15 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
             <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{totalURS} exigences • {validatedCount} validées métier • {qaOkCount} avis QA OK</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* Toggle vue */}
-            <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '8px', padding: '4px', border: `1px solid ${colors.border}` }}>
-              <button onClick={() => setViewMode('list')} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'list' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: viewMode === 'list' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'list' ? 600 : 400 }}><Icons.List /> Liste</button>
-              <button onClick={() => setViewMode('map')} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'map' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: viewMode === 'map' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'map' ? 600 : 400 }}><Icons.Layers /> Carte</button>
-            </div>
             {/* Analyse critique */}
-            <CriticalAnalysisBanner 
+            <CriticalAnalysisBanner
               status={criticalAnalysisStatus}
               lastRun={criticalAnalysisStatus !== 'none' ? '17 nov.' : null}
               findings={criticalAnalysisStatus === 'issues' ? 3 : 0}
               onLaunchAnalysis={onNavigateToAnalysis}
             />
             <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Extraire des documents</button>
-            <button style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Plus /> Nouvelle URS</button>
+            <button onClick={() => { setSelectedURS({ id: '', title: '', description: '', categoryId: 'identity', validated: false, qaOpinion: null, linkedFS: [], _isNew: true }); }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Plus /> Nouvelle URS</button>
           </div>
         </div>
       </div>
@@ -3989,14 +4068,10 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
       />
       
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
         <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '10px', border: `1px solid ${colors.border}` }}>
           <div style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary }}>{totalURS}</div>
           <div style={{ fontSize: '12px', color: colors.textSecondary }}>Total URS</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: colors.errorLight, borderRadius: '10px', border: `1px solid ${colors.error}30` }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: colors.error }}>{ursData.filter(u => u.priority === 'must').length}</div>
-          <div style={{ fontSize: '12px', color: colors.textSecondary }}>Must have</div>
         </div>
         <div style={{ padding: '16px', backgroundColor: colors.successLight, borderRadius: '10px', border: `1px solid ${colors.success}30` }}>
           <div style={{ fontSize: '24px', fontWeight: 700, color: colors.success }}>{validatedCount}</div>
@@ -4008,33 +4083,30 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         </div>
       </div>
       
+      {/* FilterBar */}
+      <FilterBar
+        categories={ursCategoryTabs}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filters={ursFilters}
+        activeFilters={activeFilters}
+        onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+      />
+
       {/* Vue Liste */}
       {viewMode === 'list' && (
-        <>
-          {/* Search */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher une exigence..." style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: 'white' }} />
-            </div>
-          </div>
-          
-          {/* Categories */}
-          {ursCategories.map(category => {
-            const items = getURSByCategory(category.id);
-            if (items.length === 0) return null;
-            return (
-              <URSCategorySection
-                key={category.id}
-                category={category}
-                ursItems={items}
-                onSelectURS={setSelectedURS}
-                isExpanded={expandedCategories.includes(category.id)}
-                onToggle={() => toggleCategory(category.id)}
-              />
-            );
-          })}
-        </>
+        <div>
+          {getFilteredURS().map(urs => (
+            <URSRow key={urs.id} urs={urs} onClick={() => setSelectedURS(urs)} />
+          ))}
+          {getFilteredURS().length === 0 && (
+            <div style={{ padding: '40px', textAlign: 'center', color: colors.textSecondary, fontSize: '14px' }}>Aucune exigence ne correspond aux filtres sélectionnés</div>
+          )}
+        </div>
       )}
       
       {/* Vue Carte */}
@@ -4051,7 +4123,7 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
       <SidePanel
         isOpen={!!selectedURS}
         onClose={() => setSelectedURS(null)}
-        title={selectedURS?.id || ''}
+        title={selectedURS?._isNew ? 'Nouvelle URS' : (selectedURS?.id || '')}
         subtitle=""
         width="450px"
       >
@@ -4278,7 +4350,6 @@ const URSFeatureMap = ({ data, categories, selectedURS, onSelectURS }) => {
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
         <span style={{ fontSize: '12px', fontWeight: 600, color: colors.primary }}>{urs.id}</span>
-        <MoscowBadge priority={urs.priority} size="small" />
       </div>
       <div style={{ fontSize: '12px', color: colors.textPrimary, lineHeight: 1.3 }}>{urs.title}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
@@ -4323,13 +4394,6 @@ const URSFeatureMap = ({ data, categories, selectedURS, onSelectURS }) => {
         })}
       </div>
       
-      {/* Légende */}
-      <div style={{ marginTop: '24px', padding: '16px', backgroundColor: colors.background, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '12px', fontWeight: 600, color: colors.textSecondary }}>Priorités :</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MoscowBadge priority="must" size="small" /><span style={{ fontSize: '12px', color: colors.textSecondary }}>Obligatoire</span></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MoscowBadge priority="should" size="small" /><span style={{ fontSize: '12px', color: colors.textSecondary }}>Important</span></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MoscowBadge priority="could" size="small" /><span style={{ fontSize: '12px', color: colors.textSecondary }}>Souhaité</span></div>
-      </div>
     </div>
   );
 };
@@ -4587,12 +4651,28 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('list');
   const [selectedFS, setSelectedFS] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilters, setActiveFilters] = useState({});
   const [validationStatus, setValidationStatus] = useState('validated'); // Pour la démo, FS est validée
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [criticalAnalysisStatus, setCriticalAnalysisStatus] = useState('issues'); // Pour la démo, 2 findings
-  
-  const filteredFS = selectedCategory === 'all' ? fsData : fsData.filter(fs => fs.categoryId === selectedCategory);
+
+  const getFilteredFS = () => {
+    let items = fsData;
+    if (selectedCategory !== 'all') items = items.filter(f => f.categoryId === selectedCategory);
+    if (searchQuery) items = items.filter(f => f.title.toLowerCase().includes(searchQuery.toLowerCase()) || f.id.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (activeFilters.status === 'validated') items = items.filter(f => f.status === 'validated');
+    if (activeFilters.status === 'review') items = items.filter(f => f.status === 'review');
+    if (activeFilters.status === 'pending') items = items.filter(f => f.status !== 'validated' && f.status !== 'review');
+    return items;
+  };
+
+  const fsCategoryTabs = fsCategories.map(c => ({ ...c, count: c.id === 'all' ? fsData.length : fsData.filter(f => f.categoryId === c.id).length }));
+
+  const fsFilters = [{ id: 'status', label: 'Statut', options: [{ value: 'validated', label: 'Validées' }, { value: 'review', label: 'En revue' }, { value: 'pending', label: 'En attente' }] }];
+
+  const filteredFS = getFilteredFS();
   const validatedCount = fsData.filter(f => f.status === 'validated').length;
   const qaReviewedCount = fsData.filter(f => f.qaReviewed).length;
 
@@ -4627,13 +4707,8 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
             <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>{fsData.length} spécifications • {validatedCount} validées • {qaReviewedCount} revues QA</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* Toggle vue */}
-            <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '8px', padding: '4px', border: `1px solid ${colors.border}` }}>
-              <button onClick={() => setViewMode('list')} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'list' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: viewMode === 'list' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'list' ? 600 : 400 }}><Icons.List /> Liste</button>
-              <button onClick={() => setViewMode('map')} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'map' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: viewMode === 'map' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'map' ? 600 : 400 }}><Icons.Layers /> Carte</button>
-            </div>
             {/* Analyse critique */}
-            <CriticalAnalysisBanner 
+            <CriticalAnalysisBanner
               status={criticalAnalysisStatus}
               lastRun={criticalAnalysisStatus !== 'none' ? '25 nov.' : null}
               findings={criticalAnalysisStatus === 'issues' ? 2 : 0}
@@ -4678,20 +4753,27 @@ const FSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
         </div>
       </div>
       
-      {/* Filtres catégories */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        {fsCategories.map(cat => (
-          <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} style={{ padding: '8px 14px', borderRadius: '20px', border: selectedCategory === cat.id ? `2px solid ${colors.primary}` : `1px solid ${colors.border}`, backgroundColor: selectedCategory === cat.id ? colors.primaryLight : 'white', cursor: 'pointer', fontSize: '13px', fontWeight: selectedCategory === cat.id ? 600 : 400, color: selectedCategory === cat.id ? colors.primary : colors.textSecondary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>{cat.icon}</span> {cat.label}
-            <span style={{ padding: '2px 6px', backgroundColor: selectedCategory === cat.id ? colors.primary : colors.background, color: selectedCategory === cat.id ? 'white' : colors.textSecondary, borderRadius: '10px', fontSize: '11px', fontWeight: 600 }}>{cat.id === 'all' ? fsData.length : fsData.filter(f => f.categoryId === cat.id).length}</span>
-          </button>
-        ))}
-      </div>
-      
+      {/* FilterBar */}
+      <FilterBar
+        categories={fsCategoryTabs}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filters={fsFilters}
+        activeFilters={activeFilters}
+        onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+      />
+
       {/* Liste */}
       {viewMode === 'list' && (
         <div>
           {filteredFS.map(fs => <FSRow key={fs.id} fs={fs} onClick={() => setSelectedFS(fs)} />)}
+          {filteredFS.length === 0 && (
+            <div style={{ padding: '40px', textAlign: 'center', color: colors.textSecondary, fontSize: '14px' }}>Aucune spécification ne correspond aux filtres sélectionnés</div>
+          )}
         </div>
       )}
       
@@ -5089,6 +5171,9 @@ const FRAContent = ({ userRole = 'qualite' }) => {
   const [selectedFS, setSelectedFS] = useState(null);
   const [validationStatus, setValidationStatus] = useState('draft'); // Pour la démo, FRA est en rédaction
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'map'
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilters, setActiveFilters] = useState({});
   const [showDetailPanel, setShowDetailPanel] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
 
@@ -5109,6 +5194,28 @@ const FRAContent = ({ userRole = 'qualite' }) => {
     low: fraData.filter(fs => getMaxPriority(fs.risks) === 'L').length,
     validated: fraData.filter(fs => fs.status === 'validated').length,
   };
+
+  const getFilteredFRA = () => {
+    let items = fraData;
+    if (selectedCategory !== 'all') items = items.filter(fs => fs.risks.some(r => r.category === selectedCategory));
+    if (searchQuery) items = items.filter(fs => fs.title.toLowerCase().includes(searchQuery.toLowerCase()) || fs.id.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (activeFilters.priority === 'H') items = items.filter(fs => getMaxPriority(fs.risks) === 'H');
+    if (activeFilters.priority === 'M') items = items.filter(fs => getMaxPriority(fs.risks) === 'M');
+    if (activeFilters.priority === 'L') items = items.filter(fs => getMaxPriority(fs.risks) === 'L');
+    if (activeFilters.status === 'validated') items = items.filter(fs => fs.status === 'validated');
+    if (activeFilters.status === 'pending') items = items.filter(fs => fs.status !== 'validated');
+    return items;
+  };
+
+  const fraCategoryTabs = [
+    { id: 'all', label: 'Tous les risques', count: fraData.length },
+    ...riskCategories.map(c => ({ ...c, label: c.shortLabel || c.label, count: fraData.filter(fs => fs.risks.some(r => r.category === c.id)).length }))
+  ];
+
+  const fraFilters = [
+    { id: 'priority', label: 'Priorité', options: [{ value: 'H', label: 'High' }, { value: 'M', label: 'Medium' }, { value: 'L', label: 'Low' }] },
+    { id: 'status', label: 'Statut', options: [{ value: 'validated', label: 'Validé' }, { value: 'pending', label: 'En attente' }] }
+  ];
 
   const fraValidationData = validationData.fra;
   const isApprover = userRole === 'qualite'; // QA est approbateur FRA
@@ -5140,11 +5247,6 @@ const FRAContent = ({ userRole = 'qualite' }) => {
             <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>Évaluation des risques pour {fraData.length} spécifications fonctionnelles</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* Toggle vue */}
-            <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '8px', padding: '4px', border: `1px solid ${colors.border}` }}>
-              <button onClick={() => setViewMode('list')} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'list' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: viewMode === 'list' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'list' ? 600 : 400 }}><Icons.List /> Liste</button>
-              <button onClick={() => setViewMode('map')} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'map' ? colors.primaryLight : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: viewMode === 'map' ? colors.primary : colors.textSecondary, fontWeight: viewMode === 'map' ? 600 : 400 }}><Icons.Layers /> Carte</button>
-            </div>
             <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.textPrimary, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Download /> Exporter</button>
             <button style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${colors.accent}`, backgroundColor: colors.accentLight, cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: colors.primaryDark, display: 'flex', alignItems: 'center', gap: '8px' }}><Icons.Sparkles /> Pré-évaluer par IA</button>
           </div>
@@ -5188,6 +5290,20 @@ const FRAContent = ({ userRole = 'qualite' }) => {
         </div>
       </div>
 
+      {/* FilterBar */}
+      <FilterBar
+        categories={fraCategoryTabs}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        filters={fraFilters}
+        activeFilters={activeFilters}
+        onFilterChange={(id, val) => setActiveFilters(prev => ({ ...prev, [id]: val }))}
+      />
+
       {/* Vue Liste */}
       {viewMode === 'list' && (
         <>
@@ -5212,9 +5328,12 @@ const FRAContent = ({ userRole = 'qualite' }) => {
               <div>Priorité max</div>
               <div>Statut</div>
             </div>
-            {fraData.map(fs => (
+            {getFilteredFRA().map(fs => (
               <FRARow key={fs.id} fs={fs} maxPriority={getMaxPriority(fs.risks)} onClick={() => setSelectedFS(fs)} isSelected={selectedFS?.id === fs.id} />
             ))}
+            {getFilteredFRA().length === 0 && (
+              <div style={{ padding: '40px', textAlign: 'center', color: colors.textSecondary, fontSize: '14px' }}>Aucune analyse ne correspond aux filtres sélectionnés</div>
+            )}
           </div>
         </>
       )}
