@@ -224,19 +224,19 @@ const SidebarNavigation = ({ activeSection, onSectionChange, onBackToHome }) => 
   const menuStructure = [
     { id: 'project', title: 'Projet', items: [
       { id: 'info', label: 'Informations projet', icon: Icons.Info },
-      { id: 'raci', label: '\u00C9quipe', icon: Icons.Users },
+      { id: 'raci', label: 'Équipe', icon: Icons.Users },
       { id: 'documents', label: 'Documentation projet', icon: Icons.Folder },
     ]},
-    { id: 'strategy', title: 'Strat\u00E9gie', items: [
+    { id: 'strategy', title: 'Stratégie', items: [
       { id: 'svp', label: 'Plan de validation (SVP)', icon: Icons.FileSignature, status: 'in-progress' },
     ]},
-    { id: 'features-risks', title: 'Fonctionnalit\u00E9s et Risques', items: [
-      { id: 'urs', label: 'Besoins m\u00E9tier (URS)', icon: Icons.ClipboardList, status: 'completed' },
-      { id: 'fs', label: 'Sp\u00E9cifications (FS)', icon: Icons.List, status: 'in-progress' },
+    { id: 'features-risks', title: 'Fonctionnalités et Risques', items: [
+      { id: 'urs', label: 'Besoins métier (URS)', icon: Icons.ClipboardList, status: 'completed' },
+      { id: 'fs', label: 'Spécifications (FS)', icon: Icons.List, status: 'in-progress' },
       { id: 'fra', label: 'Analyse des risques (FRA)', icon: Icons.Shield, status: 'in-progress' },
     ]},
     { id: 'exports', title: 'Exports', items: [
-      { id: 'exports', label: 'Documents sign\u00E9s', icon: Icons.Download },
+      { id: 'exports', label: 'Documents signés', icon: Icons.Download },
     ]},
   ];
   
@@ -6218,7 +6218,7 @@ const HomeHeader = ({ userRole, onRoleChange, onOpenBackoffice, onOpenHelp, wire
     <div style={{ flex: 1, maxWidth: '480px', margin: '0 40px' }}>
       <div style={{ position: 'relative' }}>
         <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
-        <input type="text" placeholder="Rechercher un projet, une t\u00E2che, un document..." style={{ width: '100%', padding: '10px 14px 10px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: colors.background }} />
+        <input type="text" placeholder="Rechercher un projet, une tâche, un document..." style={{ width: '100%', padding: '10px 14px 10px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: colors.background }} />
       </div>
     </div>
     
@@ -8554,11 +8554,11 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate, wirefra
           <div style={{ width: '40px', height: '2px', backgroundColor: createStep >= 2 ? colors.primary : colors.border }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: createStep >= 2 ? colors.primary : colors.border, color: createStep >= 2 ? 'white' : colors.textSecondary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>2</div>
-            <span style={{ fontSize: '13px', fontWeight: createStep === 2 ? 600 : 400, color: createStep === 2 ? colors.textPrimary : colors.textSecondary }}>Documents & \u00C9tapes</span>
+            <span style={{ fontSize: '13px', fontWeight: createStep === 2 ? 600 : 400, color: createStep === 2 ? colors.textPrimary : colors.textSecondary }}>Documents & Étapes</span>
           </div>
         </div>
 
-        {/* \u00C9tape 1 : Configuration */}
+        {/* Étape 1 : Configuration */}
         {createStep === 1 && <>
         {/* 1. Informations générales */}
         <FormSection title="Informations générales" icon="📋">
@@ -8704,9 +8704,9 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate, wirefra
 
         </>}
 
-        {/* \u00C9tape 2 : Documents & \u00C9tapes requis */}
+        {/* Étape 2 : Documents & Étapes requis */}
         {createStep === 2 && <>
-          <FormSection title="Documents & \u00C9tapes requis" icon="\uD83D\uDCD1">
+          <FormSection title="Documents & Étapes requis" icon="📑">
             <p style={{ fontSize: '13px', color: colors.textSecondary, margin: '0 0 16px', padding: '12px', backgroundColor: colors.primaryLight, borderRadius: '8px' }}>
               <Icons.Info style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: '6px' }} />
               Pré-calculé selon votre configuration. Vous pouvez ajuster avec justification.
@@ -8745,7 +8745,7 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate, wirefra
           </button>
           {createStep === 1 && (
             <button onClick={() => setCreateStep(2)} disabled={!isFormValid} style={{ padding: '12px 32px', backgroundColor: isFormValid ? colors.primary : colors.border, border: 'none', borderRadius: '8px', cursor: isFormValid ? 'pointer' : 'not-allowed', fontSize: '14px', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Calculer les Documents & \u00C9tapes requis <Icons.ArrowRight />
+              Calculer les Documents & Étapes requis <Icons.ArrowRight />
             </button>
           )}
           {createStep === 2 && <>
@@ -8753,7 +8753,7 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate, wirefra
               <Icons.ArrowLeft /> Retour
             </button>
             <button onClick={onCreate} style={{ padding: '12px 32px', backgroundColor: colors.primary, border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Icons.Plus /> Cr\u00E9er le projet
+              <Icons.Plus /> Créer le projet
             </button>
           </>}
         </div>
@@ -9239,7 +9239,7 @@ export default function GxPDocApp() {
     return <div style={wfStyle}><HelpPage userRole={userRole} onBackToHome={handleBackToHome} /></div>;
   }
 
-  // Vue Cr\u00E9ation de projet
+  // Vue Création de projet
   if (currentView === 'create-project') {
     return (
       <div style={wfStyle}>
