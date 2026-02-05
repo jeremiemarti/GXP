@@ -1733,7 +1733,7 @@ const validationData = {
     id: 'svp',
     name: 'Plan de Validation (SVP)',
     shortName: 'SVP',
-    status: 'signed',
+    status: 'draft',
     approver: { name: 'Jean Dupont', initials: 'JD', role: 'UPM' },
     validatedAt: '2024-11-12',
     validatedBy: { name: 'Jean Dupont', initials: 'JD' },
@@ -2846,9 +2846,64 @@ const systemSectionTypes = [
 ];
 
 // Section éditable avec génération IA
-const EditableSection = ({ title, icon: Icon, content, onChange, onGenerate, placeholder, isGenerating, aiSource }) => {
+// Badge confiance IA réutilisable
+const AIConfidenceBadge = ({ confidence }) => {
+  const cfg = confidence >= 75
+    ? { bg: colors.successLight, color: colors.success, border: colors.success }
+    : confidence >= 50
+    ? { bg: colors.warningLight, color: colors.warning, border: colors.warning }
+    : { bg: colors.errorLight, color: colors.error, border: colors.error };
+  return (
+    <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: cfg.bg, color: cfg.color, fontSize: '11px', fontWeight: 600 }}>Confiance : {confidence}%</span>
+  );
+};
+
+// Panneau de proposition IA réutilisable
+const AIProposalPanel = ({ isLoading, proposal, confidence, lowConfidenceReason, onApply, applyLabel }) => {
+  if (!isLoading && !proposal) return null;
+  const isLow = confidence < 50;
+  const borderColor = confidence >= 75 ? colors.success : confidence >= 50 ? colors.warning : colors.error;
+  return (
+    <div style={{ padding: '16px', backgroundColor: colors.accentLight, borderRadius: '10px', marginBottom: '16px', border: `1px solid ${borderColor}30` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <span style={{ color: colors.accent, display: 'flex', alignItems: 'center' }}><Icons.Sparkles /></span>
+        <span style={{ fontWeight: 600, color: colors.textPrimary }}>Proposition IA</span>
+        {!isLoading && <span style={{ marginLeft: 'auto' }}><AIConfidenceBadge confidence={confidence} /></span>}
+      </div>
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: '20px', color: colors.textSecondary }}>Analyse des documents projet en cours...</div>
+      ) : (
+        <div>
+          {isLow && lowConfidenceReason && (
+            <div style={{ padding: '8px 12px', backgroundColor: colors.errorLight, borderRadius: '6px', marginBottom: '12px', fontSize: '12px', color: colors.error, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ display: 'flex', alignItems: 'center' }}><Icons.AlertTriangle /></span> {lowConfidenceReason}
+            </div>
+          )}
+          <pre style={{ margin: 0, fontSize: '13px', color: colors.textPrimary, whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6, backgroundColor: 'white', padding: '12px', borderRadius: '6px', border: `1px solid ${colors.border}` }}>{proposal}</pre>
+          <button onClick={onApply} style={{ marginTop: '12px', padding: '8px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', ...(isLow ? { border: `1px solid ${colors.border}`, backgroundColor: 'white', color: colors.textPrimary } : { border: 'none', backgroundColor: colors.primary, color: 'white' }) }}>
+            {applyLabel || (isLow ? 'Appliquer comme brouillon' : 'Appliquer cette proposition')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EditableSection = ({ title, icon: Icon, content, onChange, onGenerate, placeholder, isGenerating, aiSource, aiProposal, aiConfidence, aiLowReason }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  
+  const [showProposal, setShowProposal] = useState(false);
+
+  const handleGenerate = (e) => {
+    e.stopPropagation();
+    setShowProposal(true);
+    onGenerate();
+  };
+
+  const handleApply = () => {
+    if (aiProposal) onChange(aiProposal);
+    setShowProposal(false);
+  };
+
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}`, marginBottom: '16px', overflow: 'hidden' }}>
       <div style={{ padding: '16px 20px', borderBottom: isExpanded ? `1px solid ${colors.border}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>
@@ -2867,10 +2922,13 @@ const EditableSection = ({ title, icon: Icon, content, onChange, onGenerate, pla
       {isExpanded && (
         <div style={{ padding: '20px' }}>
           <div style={{ marginBottom: '12px' }}>
-            <button onClick={(e) => { e.stopPropagation(); onGenerate(); }} disabled={isGenerating} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isGenerating ? 0.7 : 1 }}>
-              <Icons.Sparkles />{isGenerating ? 'Génération en cours...' : 'Générer avec l\'IA'}
+            <button onClick={handleGenerate} disabled={isGenerating} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isGenerating ? 0.7 : 1 }}>
+              <Icons.Sparkles />{isGenerating ? 'Analyse en cours...' : 'Proposition IA'}
             </button>
           </div>
+          {showProposal && (
+            <AIProposalPanel isLoading={isGenerating} proposal={aiProposal} confidence={aiConfidence} lowConfidenceReason={aiLowReason} onApply={handleApply} />
+          )}
           <textarea value={content} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', minHeight: '150px', padding: '14px', borderRadius: '8px', border: `1px solid ${colors.border}`, fontSize: '14px', lineHeight: 1.6, resize: 'vertical', fontFamily: 'inherit', color: colors.textPrimary, outline: 'none' }} />
         </div>
       )}
@@ -2879,10 +2937,16 @@ const EditableSection = ({ title, icon: Icon, content, onChange, onGenerate, pla
 };
 
 // Section dynamique (sous-sections ajoutables)
-const DynamicSection = ({ title, icon: Icon, sections, onAdd, onRemove, onUpdate, onGenerate }) => {
+const DynamicSection = ({ title, icon: Icon, sections, onAdd, onRemove, onUpdate, onGenerate, isGenerating, aiProposal, aiConfidence, aiLowReason }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAddMenu, setShowAddMenu] = useState(false);
-  
+  const [showProposal, setShowProposal] = useState(false);
+
+  const handleGenerate = () => {
+    setShowProposal(true);
+    onGenerate();
+  };
+
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}`, marginBottom: '16px', overflow: 'hidden' }}>
       <div style={{ padding: '16px 20px', borderBottom: isExpanded ? `1px solid ${colors.border}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2894,7 +2958,7 @@ const DynamicSection = ({ title, icon: Icon, sections, onAdd, onRemove, onUpdate
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={onGenerate} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Sparkles /> Pré-remplir</button>
+          <button onClick={handleGenerate} disabled={isGenerating} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isGenerating ? 0.7 : 1 }}><Icons.Sparkles /> {isGenerating ? 'Analyse...' : 'Proposition IA'}</button>
           <div style={{ position: 'relative' }}>
             <button onClick={() => setShowAddMenu(!showAddMenu)} style={{ padding: '8px 14px', borderRadius: '8px', border: `1px solid ${colors.border}`, backgroundColor: 'white', color: colors.textPrimary, fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Plus /> Ajouter</button>
             {showAddMenu && (
@@ -2913,8 +2977,11 @@ const DynamicSection = ({ title, icon: Icon, sections, onAdd, onRemove, onUpdate
           <span style={{ color: colors.textSecondary, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}</span>
         </div>
       </div>
-      {isExpanded && sections.length > 0 && (
+      {isExpanded && (
         <div style={{ padding: '20px' }}>
+          {showProposal && (
+            <AIProposalPanel isLoading={isGenerating} proposal={aiProposal} confidence={aiConfidence} lowConfidenceReason={aiLowReason} onApply={() => { onGenerate('apply'); setShowProposal(false); }} />
+          )}
           {sections.map((section, index) => (
             <div key={section.id} style={{ padding: '16px', backgroundColor: colors.background, borderRadius: '8px', marginBottom: '12px', border: `1px solid ${colors.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -2966,28 +3033,14 @@ const StrategyPanel = ({ strategy, onStrategyChange }) => {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={handleAnalyze} disabled={isAnalyzing} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isAnalyzing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><Icons.Zap />{isAnalyzing ? 'Analyse...' : 'Analyser et proposer'}</button>
+          <button onClick={handleAnalyze} disabled={isAnalyzing} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.accentLight, color: colors.accent, fontSize: '13px', fontWeight: 500, cursor: isAnalyzing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: isAnalyzing ? 0.7 : 1 }}><Icons.Sparkles />{isAnalyzing ? 'Analyse...' : 'Proposition IA'}</button>
           <span style={{ color: colors.textSecondary, cursor: 'pointer' }} onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? <Icons.ChevronUp /> : <Icons.ChevronDown />}</span>
         </div>
       </div>
       {isExpanded && (
         <div style={{ padding: '20px' }}>
           {showAIPanel && (
-            <div style={{ padding: '16px', backgroundColor: colors.accentLight, borderRadius: '10px', marginBottom: '20px', border: `1px solid ${colors.accent}30` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Icons.Sparkles style={{ color: colors.accent }} />
-                <span style={{ fontWeight: 600, color: colors.textPrimary }}>Recommandation IA</span>
-                {aiResponse && <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: colors.success, color: 'white', fontSize: '11px', fontWeight: 600, marginLeft: 'auto' }}>Confiance : {aiResponse.confidence}%</span>}
-              </div>
-              {isAnalyzing ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: colors.textSecondary }}>Analyse des documents projet en cours...</div>
-              ) : aiResponse && (
-                <div>
-                  <pre style={{ margin: 0, fontSize: '13px', color: colors.textPrimary, whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6 }}>{aiResponse.reasoning}</pre>
-                  <button onClick={() => onStrategyChange(aiResponse.recommendation)} style={{ marginTop: '12px', padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: colors.primary, color: 'white', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Appliquer cette recommandation</button>
-                </div>
-              )}
-            </div>
+            <AIProposalPanel isLoading={isAnalyzing} proposal={aiResponse?.reasoning} confidence={aiResponse?.confidence || 0} onApply={() => { onStrategyChange(aiResponse.recommendation); setShowAIPanel(false); }} applyLabel="Appliquer cette proposition" />
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
             {strategyOptions.map(option => (
@@ -3046,29 +3099,26 @@ const SVPContent = ({ onNavigate }) => {
     { id: 2, title: 'Environnements', content: '' },
   ]);
   const [isGenerating, setIsGenerating] = useState({});
-  const [validationStatus, setValidationStatus] = useState('signed'); // Pour la démo, SVP est signé
-  
+  const [aiProposals, setAiProposals] = useState({});
+  const [validationStatus, setValidationStatus] = useState('draft');
+
+  const aiData = {
+    objectives: {
+      text: `L'objectif de cette validation est de démontrer avec un haut niveau de confiance que le système fonctionnera correctement lorsqu'il sera utilisé conformément au périmètre d'utilisation décrit dans les exigences du système.\n\nLe plan de validation du système définit l'étendue et l'organisation des étapes de validation permettant d'atteindre cet objectif.`,
+      confidence: 88,
+    },
+    scope: {
+      text: `Cette validation concerne le système utilisé pour la gestion des données métier dans le cadre des activités réglementées.\n\nPérimètre inclus :\n• Module de gestion des données principales\n• Module d'enregistrement et de traçabilité\n• Interfaces avec les systèmes tiers\n• Génération des rapports réglementaires\n\nPérimètre exclu :\n• Infrastructure IT (qualifiée séparément)\n• Formation des utilisateurs (plan de formation dédié)`,
+      confidence: 72,
+      lowReason: 'Proposition partielle : les détails fournisseur ne sont pas encore renseignés.',
+    },
+  };
+
   const handleGenerate = (field) => {
-    setIsGenerating({ ...isGenerating, [field]: true });
+    setIsGenerating(prev => ({ ...prev, [field]: true }));
     setTimeout(() => {
-      if (field === 'objectives') {
-        setObjectives(`L'objectif de cette validation est de démontrer avec un haut niveau de confiance que le système fonctionnera correctement lorsqu'il sera utilisé conformément au périmètre d'utilisation décrit dans les exigences du système.
-
-Le plan de validation du système définit l'étendue et l'organisation des étapes de validation permettant d'atteindre cet objectif.`);
-      } else if (field === 'scope') {
-        setScope(`Cette validation concerne le système utilisé pour la gestion des données métier dans le cadre des activités réglementées.
-
-Périmètre inclus :
-• Module de gestion des données principales
-• Module d'enregistrement et de traçabilité
-• Interfaces avec les systèmes tiers
-• Génération des rapports réglementaires
-
-Périmètre exclu :
-• Infrastructure IT (qualifiée séparément)
-• Formation des utilisateurs (plan de formation dédié)`);
-      }
-      setIsGenerating({ ...isGenerating, [field]: false });
+      setAiProposals(prev => ({ ...prev, [field]: aiData[field] }));
+      setIsGenerating(prev => ({ ...prev, [field]: false }));
     }, 1500);
   };
   
@@ -3076,25 +3126,22 @@ Périmètre exclu :
     setSystemSections([...systemSections, { id: Date.now(), title: type.label, content: '' }]);
   };
   
-  const handleGenerateSystem = () => {
-    setSystemSections([
-      { id: 1, title: 'Composants du système', content: `Le système est composé de :
+  const systemProposalSections = [
+    { id: 1, title: 'Composants du système', content: `Le système est composé de :\n\n• Infrastructure Cloud : Hébergement sécurisé (GAMP 1) - Non validé (infrastructure qualifiée fournisseur)\n• Base de données : SQL Server (GAMP 1)\n• Application principale : Module métier v3.2 (GAMP 4) - À valider\n• Module reporting : Générateur de rapports (GAMP 3) - Configuration à valider` },
+    { id: 2, title: 'Environnements', content: `Trois environnements sont utilisés pour ce système :\n\n• Développement : Utilisé pour les développements et tests unitaires\n• Validation (Staging) : Utilisé pour les tests OQ\n• Production : Utilisé pour les tests PQ et l'exploitation` },
+    { id: 3, title: 'Interfaces', content: `Le système interface avec :\n\n• ERP : Export des données de production (sortant)\n• Équipements de mesure : Acquisition automatique des données (entrant)\n• Annuaire d'entreprise : Authentification des utilisateurs (entrant)` },
+  ];
 
-• Infrastructure Cloud : Hébergement sécurisé (GAMP 1) - Non validé (infrastructure qualifiée fournisseur)
-• Base de données : SQL Server (GAMP 1)
-• Application principale : Module métier v3.2 (GAMP 4) - À valider
-• Module reporting : Générateur de rapports (GAMP 3) - Configuration à valider` },
-      { id: 2, title: 'Environnements', content: `Trois environnements sont utilisés pour ce système :
-
-• Développement : Utilisé pour les développements et tests unitaires
-• Validation (Staging) : Utilisé pour les tests OQ
-• Production : Utilisé pour les tests PQ et l'exploitation` },
-      { id: 3, title: 'Interfaces', content: `Le système interface avec :
-
-• ERP : Export des données de production (sortant)
-• Équipements de mesure : Acquisition automatique des données (entrant)
-• Annuaire d'entreprise : Authentification des utilisateurs (entrant)` },
-    ]);
+  const handleGenerateSystem = (action) => {
+    if (action === 'apply') {
+      setSystemSections(systemProposalSections);
+      return;
+    }
+    setIsGenerating(prev => ({ ...prev, system: true }));
+    setTimeout(() => {
+      setAiProposals(prev => ({ ...prev, system: { text: systemProposalSections.map(s => `**${s.title}**\n${s.content}`).join('\n\n'), confidence: 45, lowReason: 'Données insuffisantes : aucune documentation technique fournisseur n\'a été importée dans le projet.' } }));
+      setIsGenerating(prev => ({ ...prev, system: false }));
+    }, 2000);
   };
 
   const svpData = validationData.svp;
@@ -3118,28 +3165,26 @@ Périmètre exclu :
       </div>
       
       {/* Workflow de validation */}
-      <ValidationWorkflow 
+      <ValidationWorkflowCompact
         stepId="svp"
-        status={svpData.status}
+        status={validationStatus}
         approver={svpData.approver}
-        validatedBy={svpData.validatedBy}
-        validatedAt={svpData.validatedAt}
         signatures={svpData.signatures}
-        onSubmitValidation={() => setValidationStatus('validated')}
-        onRequestSignatures={() => setValidationStatus('signed')}
+        onApprove={() => setValidationStatus('validated')}
+        onRequestApproval={() => setValidationStatus('validated')}
       />
       
       {/* Dépendances */}
       <DependenciesStatus onNavigate={onNavigate} />
       
       {/* Objectifs */}
-      <EditableSection title="Objectifs" icon={Icons.Target} content={objectives} onChange={setObjectives} onGenerate={() => handleGenerate('objectives')} placeholder="Décrivez les objectifs de cette validation..." isGenerating={isGenerating.objectives} aiSource="Documents projet" />
-      
+      <EditableSection title="Objectifs" icon={Icons.Target} content={objectives} onChange={setObjectives} onGenerate={() => handleGenerate('objectives')} placeholder="Décrivez les objectifs de cette validation..." isGenerating={isGenerating.objectives} aiSource="Documents projet" aiProposal={aiProposals.objectives?.text} aiConfidence={aiProposals.objectives?.confidence} />
+
       {/* Scope */}
-      <EditableSection title="Périmètre (Scope)" icon={Icons.Layers} content={scope} onChange={setScope} onGenerate={() => handleGenerate('scope')} placeholder="Définissez ce qui est inclus et exclu de cette validation..." isGenerating={isGenerating.scope} aiSource="Documents projet" />
+      <EditableSection title="Périmètre (Scope)" icon={Icons.Layers} content={scope} onChange={setScope} onGenerate={() => handleGenerate('scope')} placeholder="Définissez ce qui est inclus et exclu de cette validation..." isGenerating={isGenerating.scope} aiSource="Documents projet" aiProposal={aiProposals.scope?.text} aiConfidence={aiProposals.scope?.confidence} aiLowReason={aiProposals.scope?.lowReason} />
       
       {/* Description du système */}
-      <DynamicSection title="Description du système" icon={Icons.Server} sections={systemSections} onAdd={handleAddSystemSection} onRemove={(idx) => setSystemSections(systemSections.filter((_, i) => i !== idx))} onUpdate={(idx, updated) => { const newSections = [...systemSections]; newSections[idx] = updated; setSystemSections(newSections); }} onGenerate={handleGenerateSystem} />
+      <DynamicSection title="Description du système" icon={Icons.Server} sections={systemSections} onAdd={handleAddSystemSection} onRemove={(idx) => setSystemSections(systemSections.filter((_, i) => i !== idx))} onUpdate={(idx, updated) => { const newSections = [...systemSections]; newSections[idx] = updated; setSystemSections(newSections); }} onGenerate={handleGenerateSystem} isGenerating={isGenerating.system} aiProposal={aiProposals.system?.text} aiConfidence={aiProposals.system?.confidence} aiLowReason={aiProposals.system?.lowReason} />
       
       {/* Stratégie de validation */}
       <StrategyPanel strategy={strategy} onStrategyChange={setStrategy} />
@@ -8536,12 +8581,12 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate, wirefra
               <h1 style={{ fontSize: '28px', fontWeight: 700, color: colors.textPrimary, margin: '0 0 8px 0' }}>Créer un nouveau projet</h1>
               <p style={{ fontSize: '15px', color: colors.textSecondary, margin: 0 }}>Configurez les informations de base pour démarrer la validation.</p>
             </div>
-            <button 
+            {createStep === 1 && <button
               onClick={() => setShowSpriteModal(true)}
               style={{ padding: '10px 20px', backgroundColor: colors.accentLight, border: `1px solid ${colors.accent}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: colors.accent, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
             >
               <Icons.Download /> Récupérer depuis SPRITE
-            </button>
+            </button>}
           </div>
         </div>
 
