@@ -120,7 +120,7 @@ const AppLogo = () => (
 // =============================================================================
 // HEADER (avec sélecteur de rôle)
 // =============================================================================
-const Header = ({ projectName, userRole, onRoleChange, onBackToHome }) => (
+const Header = ({ projectName, userRole, onRoleChange, onBackToHome, wireframe, onToggleWireframe }) => (
   <header style={{ 
     height: '56px', 
     backgroundColor: 'white', 
@@ -192,6 +192,21 @@ const Header = ({ projectName, userRole, onRoleChange, onBackToHome }) => (
         <button style={{ width: '40px', height: '40px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textSecondary }}>
           <Icons.HelpCircle />
         </button>
+        {/* Toggle wireframe */}
+        <button
+          onClick={onToggleWireframe}
+          title={wireframe ? 'Mode couleur' : 'Mode wireframe'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '6px 10px', borderRadius: '6px', cursor: 'pointer',
+            border: `1px solid ${wireframe ? colors.textPrimary : colors.border}`,
+            backgroundColor: wireframe ? colors.textPrimary : 'transparent',
+            color: wireframe ? 'white' : colors.textSecondary,
+            fontSize: '11px', fontWeight: 500,
+          }}
+        >
+          <Icons.Eye /> {wireframe ? 'WF' : 'WF'}
+        </button>
         <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: colors.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '8px', cursor: 'pointer', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: colors.primaryDark }}>JD</span>
         </div>
@@ -204,31 +219,24 @@ const Header = ({ projectName, userRole, onRoleChange, onBackToHome }) => (
 // SIDEBAR NAVIGATION
 // =============================================================================
 const SidebarNavigation = ({ activeSection, onSectionChange, onBackToHome }) => {
-  const [expandedSections, setExpandedSections] = useState(['project', 'strategy', 'features-risks', 'tests', 'validation']);
-  
+  const [expandedSections, setExpandedSections] = useState(['project', 'strategy', 'features-risks', 'exports']);
+
   const menuStructure = [
     { id: 'project', title: 'Projet', items: [
-      { id: 'overview', label: 'Vue d\'ensemble', icon: Icons.Home, status: 'active' },
       { id: 'info', label: 'Informations projet', icon: Icons.Info },
-      { id: 'raci', label: 'Équipe projet', icon: Icons.Users },
-      { id: 'documents', label: 'Documentation initiale', icon: Icons.Folder },
-      { id: 'exports', label: 'Exports et signatures', icon: Icons.Download },
+      { id: 'raci', label: '\u00C9quipe', icon: Icons.Users },
+      { id: 'documents', label: 'Documentation projet', icon: Icons.Folder },
     ]},
-    { id: 'strategy', title: 'Stratégie', items: [
+    { id: 'strategy', title: 'Strat\u00E9gie', items: [
       { id: 'svp', label: 'Plan de validation (SVP)', icon: Icons.FileSignature, status: 'in-progress' },
     ]},
-    { id: 'features-risks', title: 'Fonctionnalités et risques', items: [
-      { id: 'urs', label: 'Besoins métier (URS)', icon: Icons.ClipboardList, status: 'completed' },
-      { id: 'fs', label: 'Spécifications (FS)', icon: Icons.List, status: 'in-progress' },
+    { id: 'features-risks', title: 'Fonctionnalit\u00E9s et Risques', items: [
+      { id: 'urs', label: 'Besoins m\u00E9tier (URS)', icon: Icons.ClipboardList, status: 'completed' },
+      { id: 'fs', label: 'Sp\u00E9cifications (FS)', icon: Icons.List, status: 'in-progress' },
       { id: 'fra', label: 'Analyse des risques (FRA)', icon: Icons.Shield, status: 'in-progress' },
     ]},
-    { id: 'tests', title: 'Tests (IQ/OQ/PQ)', items: [
-      { id: 'protocols', label: 'Protocoles', icon: Icons.FileText, status: 'pending' },
-      { id: 'scripts', label: 'Scripts', icon: Icons.Code, status: 'pending' },
-      { id: 'reports', label: 'Rapports', icon: Icons.FileCheck, status: 'pending' },
-    ]},
-    { id: 'validation', title: 'Validation', items: [
-      { id: 'vsr', label: 'Rapport final (VSR)', icon: Icons.Award, status: 'pending' },
+    { id: 'exports', title: 'Exports', items: [
+      { id: 'exports', label: 'Documents sign\u00E9s', icon: Icons.Download },
     ]},
   ];
   
@@ -268,28 +276,6 @@ const SidebarNavigation = ({ activeSection, onSectionChange, onBackToHome }) => 
       flexShrink: 0,
     }}>
       <div style={{ padding: '16px 12px' }}>
-        {/* Lien retour Accueil global */}
-        <button
-          onClick={() => onSectionChange('home')}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '10px 12px',
-            marginBottom: '16px',
-            border: `1px solid ${colors.border}`,
-            borderRadius: '8px',
-            backgroundColor: colors.background,
-            cursor: 'pointer',
-            fontSize: '13px',
-            color: colors.textSecondary,
-          }}
-        >
-          <Icons.ChevronRight style={{ transform: 'rotate(180deg)' }} />
-          <span>Accueil projets</span>
-        </button>
-        
         {menuStructure.map(section => {
           const isExpanded = expandedSections.includes(section.id);
           return (
@@ -968,587 +954,6 @@ const Card = ({ children, title, icon: Icon, action, style = {} }) => (
 );
 
 // =============================================================================
-// PAGE: OVERVIEW
-// =============================================================================
-const OverviewContent = ({ userRole }) => {
-  
-  // Composant Header du projet
-  const ProjectHeader = () => (
-    <div style={{
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      border: `1px solid ${colors.border}`,
-      padding: '24px',
-      marginBottom: '20px',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: colors.textPrimary }}>
-              {projectData.name}
-            </h1>
-            <span style={{
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: '600',
-              backgroundColor: colors.primaryLight,
-              color: colors.primary,
-            }}>
-              {projectData.status}
-            </span>
-          </div>
-          <p style={{ margin: 0, fontSize: '14px', color: colors.textSecondary, maxWidth: '600px', lineHeight: '1.5' }}>
-            {projectData.description}
-          </p>
-        </div>
-        <button style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          border: `1px solid ${colors.border}`,
-          backgroundColor: 'white',
-          fontSize: '13px',
-          fontWeight: '500',
-          color: colors.textSecondary,
-          cursor: 'pointer',
-        }}>
-          <Icons.Settings />
-          Paramètres
-        </button>
-      </div>
-      
-      {/* Métadonnées */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '24px',
-        paddingTop: '16px',
-        borderTop: `1px solid ${colors.border}`,
-      }}>
-        <div>
-          <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Catégorie GxP
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary }}>
-            {projectData.gxpCategory}
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Catégorie GAMP
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary }}>
-            {projectData.gampCategory}
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Process Owner
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary }}>
-            {projectData.processOwner}
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            System Owner
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary }}>
-            {projectData.systemOwner}
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Date Go-Live cible
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: colors.primary }}>
-            15 avril 2025
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-  
-  // Alertes
-  const AlertsSection = () => {
-    if (alerts.length === 0) return null;
-    
-    return (
-      <div style={{ marginBottom: '20px' }}>
-        {alerts.map(alert => (
-          <div 
-            key={alert.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 16px',
-              marginBottom: '8px',
-              borderRadius: '8px',
-              backgroundColor: alert.type === 'danger' ? colors.errorLight : colors.warningLight,
-              border: `1px solid ${alert.type === 'danger' ? colors.error : colors.warning}20`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ color: alert.type === 'danger' ? colors.error : colors.warning }}>
-                <Icons.AlertTriangle />
-              </span>
-              <span style={{ 
-                fontSize: '14px', 
-                fontWeight: '500',
-                color: alert.type === 'danger' ? colors.error : colors.warning,
-              }}>
-                {alert.message}
-              </span>
-            </div>
-            <button style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: alert.type === 'danger' ? colors.error : colors.warning,
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: '500',
-              cursor: 'pointer',
-            }}>
-              {alert.action}
-            </button>
-          </div>
-        ))}
-      </div>
-    );
-  };
-  
-  // Progression Workflow
-  const WorkflowProgress = () => {
-    const completedSteps = workflowSteps.filter(s => s.status === 'completed').length;
-    const totalSteps = workflowSteps.length;
-    const overallProgress = Math.round((completedSteps / totalSteps) * 100);
-    
-    return (
-      <Card 
-        title="Progression de la validation" 
-        icon={Icons.TrendingUp}
-        style={{ marginBottom: '20px' }}
-      >
-        {/* Barre de progression globale */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: colors.textSecondary }}>Progression globale</span>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: colors.primary }}>{overallProgress}%</span>
-          </div>
-          <div style={{
-            height: '8px',
-            backgroundColor: colors.border,
-            borderRadius: '4px',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${overallProgress}%`,
-              backgroundColor: colors.primary,
-              borderRadius: '4px',
-              transition: 'width 0.3s ease',
-            }} />
-          </div>
-        </div>
-        
-        {/* Timeline des étapes */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between',
-          position: 'relative',
-          padding: '0 10px',
-        }}>
-          {/* Ligne de connexion */}
-          <div style={{
-            position: 'absolute',
-            top: '20px',
-            left: '30px',
-            right: '30px',
-            height: '2px',
-            backgroundColor: colors.border,
-            zIndex: 0,
-          }} />
-          
-          {workflowSteps.map((step) => (
-            <div 
-              key={step.id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
-              {/* Cercle de l'étape */}
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: step.status === 'completed' ? colors.success :
-                               step.status === 'in-progress' ? colors.primary :
-                               colors.border,
-                color: step.status === 'pending' ? colors.textSecondary : 'white',
-                fontSize: '11px',
-                fontWeight: '700',
-                border: step.status === 'in-progress' ? `3px solid ${colors.primaryLight}` : 'none',
-                boxShadow: step.status === 'in-progress' ? `0 0 0 3px ${colors.primary}30` : 'none',
-              }}>
-                {step.status === 'completed' ? (
-                  <Icons.CheckCircle />
-                ) : (
-                  step.label
-                )}
-              </div>
-              
-              {/* Label */}
-              <div style={{
-                marginTop: '8px',
-                textAlign: 'center',
-              }}>
-                <div style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: step.status === 'pending' ? colors.textSecondary : colors.textPrimary,
-                }}>
-                  {step.label}
-                </div>
-                {step.status === 'completed' && (
-                  <div style={{ fontSize: '10px', color: colors.textSecondary, marginTop: '2px' }}>
-                    {step.date}
-                  </div>
-                )}
-                {step.status === 'in-progress' && step.progress && (
-                  <div style={{ fontSize: '10px', color: colors.primary, fontWeight: '600', marginTop: '2px' }}>
-                    {step.progress}%
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  };
-  
-  // KPIs (Qualité uniquement)
-  const KPIsSection = () => {
-    if (userRole !== 'qualite') return null;
-    
-    return (
-      <Card 
-        title="Indicateurs de validation" 
-        icon={Icons.Target}
-        style={{ marginBottom: '20px' }}
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <div style={{ padding: '16px', backgroundColor: colors.background, borderRadius: '8px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '8px', textTransform: 'uppercase' }}>URS</div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: colors.success, marginBottom: '4px' }}>{kpis.urs.validated}/{kpis.urs.total}</div>
-            <div style={{ fontSize: '12px', color: colors.textSecondary }}>{kpis.urs.coverage}% couverture</div>
-          </div>
-          <div style={{ padding: '16px', backgroundColor: colors.background, borderRadius: '8px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '8px', textTransform: 'uppercase' }}>Spécifications</div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: colors.primary, marginBottom: '4px' }}>{kpis.fs.validated}/{kpis.fs.total}</div>
-            <div style={{ fontSize: '12px', color: colors.textSecondary }}>{kpis.fs.coverage}% validées</div>
-          </div>
-          <div style={{ padding: '16px', backgroundColor: colors.background, borderRadius: '8px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '8px', textTransform: 'uppercase' }}>Risques identifiés</div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: colors.warning, marginBottom: '4px' }}>{kpis.risks.total}</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', fontSize: '11px' }}>
-              <span style={{ color: colors.error }}>{kpis.risks.high} H</span>
-              <span style={{ color: colors.warning }}>{kpis.risks.medium} M</span>
-              <span style={{ color: colors.textSecondary }}>{kpis.risks.low} L</span>
-            </div>
-          </div>
-          <div style={{ padding: '16px', backgroundColor: colors.background, borderRadius: '8px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: colors.textSecondary, marginBottom: '8px', textTransform: 'uppercase' }}>Tests</div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: colors.textSecondary, marginBottom: '4px' }}>—</div>
-            <div style={{ fontSize: '12px', color: colors.textSecondary }}>Phase IQ non démarrée</div>
-          </div>
-        </div>
-      </Card>
-    );
-  };
-  
-  // Actions en attente
-  const PendingActionsSection = () => (
-    <Card 
-      title="Actions en attente" 
-      icon={Icons.ClipboardList}
-      action={<span style={{ fontSize: '12px', color: colors.textSecondary }}>{pendingActions.reduce((acc, a) => acc + a.count, 0)} actions</span>}
-      style={{ marginBottom: '20px' }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {pendingActions.map(action => (
-          <div 
-            key={action.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '14px 16px',
-              backgroundColor: colors.background,
-              borderRadius: '8px',
-              border: `1px solid ${colors.border}`,
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '8px',
-                backgroundColor: action.priority === 'high' ? colors.errorLight :
-                               action.priority === 'medium' ? colors.warningLight :
-                               colors.border,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: action.priority === 'high' ? colors.error :
-                       action.priority === 'medium' ? colors.warning :
-                       colors.textSecondary,
-              }}>
-                {action.type === 'validation' && <Icons.FileCheck />}
-                {action.type === 'scoring' && <Icons.Shield />}
-                {action.type === 'review' && <Icons.Eye />}
-                {action.type === 'approval' && <Icons.CheckCheck />}
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary }}>{action.category}</span>
-                  <PriorityBadge priority={action.priority} />
-                </div>
-                <div style={{ fontSize: '12px', color: colors.textSecondary }}>
-                  <span style={{ fontWeight: '600', color: colors.primary }}>{action.count}</span>
-                  {' sur '}{action.total} • Assigné à {action.assignedRole}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '12px', color: colors.textSecondary }}>Échéance</div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: action.priority === 'high' ? colors.error : colors.textPrimary }}>
-                  {new Date(action.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                </div>
-              </div>
-              <span style={{ color: colors.textSecondary }}><Icons.ChevronRight /></span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-  
-  // Activité récente
-  const RecentActivitySection = () => (
-    <Card 
-      title="Activité récente" 
-      icon={Icons.Activity}
-      action={<button style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', backgroundColor: colors.background, fontSize: '12px', color: colors.textSecondary, cursor: 'pointer' }}>Voir tout</button>}
-      style={{ marginBottom: '20px' }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-        {recentActivity.map((item, index) => (
-          <div 
-            key={item.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 0',
-              borderBottom: index < recentActivity.length - 1 ? `1px solid ${colors.border}` : 'none',
-            }}
-          >
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: colors.primaryLight,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '11px',
-              fontWeight: '600',
-              color: colors.primary,
-            }}>
-              {item.role}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px', color: colors.textPrimary }}>
-                <span style={{ fontWeight: '600' }}>{item.user}</span>
-                {' · '}{item.action}
-              </div>
-            </div>
-            <div style={{ fontSize: '12px', color: colors.textSecondary }}>
-              {item.time}
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-  
-  // Équipe projet
-  const TeamSection = () => (
-    <Card 
-      title="Équipe projet" 
-      icon={Icons.Users}
-      style={{ marginBottom: '20px' }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {teamMembers.map((member, index) => (
-          <div 
-            key={index}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px',
-              backgroundColor: colors.background,
-              borderRadius: '8px',
-            }}
-          >
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              backgroundColor: colors.primary,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: 'white',
-            }}>
-              {member.abbr}
-            </div>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: colors.textPrimary }}>{member.name}</div>
-              <div style={{ fontSize: '11px', color: colors.textSecondary }}>{member.role}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-  
-  // Documents récents
-  const RecentDocumentsSection = () => (
-    <Card 
-      title="Documents récents" 
-      icon={Icons.FileText}
-      action={<button style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', backgroundColor: colors.background, fontSize: '12px', color: colors.textSecondary, cursor: 'pointer' }}>Tous les documents</button>}
-      style={{ marginBottom: '20px' }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {recentDocuments.map(doc => (
-          <div 
-            key={doc.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px',
-              backgroundColor: colors.background,
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ color: colors.primary }}><Icons.FileText /></span>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: '500', color: colors.textPrimary }}>{doc.name}</div>
-                <div style={{ fontSize: '11px', color: colors.textSecondary }}>{doc.type} • {doc.date}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <StatusBadge status={doc.status === 'Approuvé' ? 'completed' : doc.status === 'Brouillon' ? 'pending' : 'in-progress'} />
-              <span style={{ color: colors.textSecondary, cursor: 'pointer' }}><Icons.Download /></span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-  
-  // Dates clés
-  const KeyDatesSection = () => {
-    const dates = [
-      { label: 'Deadline SVP', date: '05/12/2024', daysLeft: 4, status: 'warning' },
-      { label: 'Fin phase FS', date: '15/12/2024', daysLeft: 14, status: 'normal' },
-      { label: 'Début IQ', date: '15/01/2025', daysLeft: 45, status: 'normal' },
-      { label: 'Go-Live cible', date: '15/04/2025', daysLeft: 135, status: 'normal' },
-    ];
-    
-    return (
-      <Card title="Dates clés" icon={Icons.Calendar}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {dates.map((item, index) => (
-            <div 
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottom: index < dates.length - 1 ? `1px solid ${colors.border}` : 'none',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {item.status === 'warning' && <span style={{ color: colors.warning }}><Icons.AlertCircle /></span>}
-                <span style={{ fontSize: '13px', color: item.status === 'warning' ? colors.warning : colors.textPrimary, fontWeight: item.status === 'warning' ? '600' : '400' }}>
-                  {item.label}
-                </span>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: colors.textPrimary }}>{item.date}</div>
-                <div style={{ fontSize: '11px', color: item.daysLeft <= 7 ? colors.warning : colors.textSecondary }}>{item.daysLeft} jours</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  };
-  
-  return (
-    <div style={{ 
-      flex: 1, 
-      padding: '24px', 
-      overflow: 'auto', 
-      backgroundColor: colors.background,
-      height: 'calc(100vh - 56px)',
-    }}>
-      <ProjectHeader />
-      <AlertsSection />
-      <WorkflowProgress />
-      <KPIsSection />
-      <PendingActionsSection />
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        <div>
-          <RecentActivitySection />
-          <RecentDocumentsSection />
-        </div>
-        <div>
-          <TeamSection />
-          <KeyDatesSection />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
 // PAGE: ÉQUIPE PROJET (RACI)
 // =============================================================================
 
@@ -1707,7 +1112,7 @@ const RoleCard = ({ role, assignedPerson, onAssign, onShowInfo, otherRolesForPer
               <div style={{ position: 'absolute', top: '100%', left: '20px', right: '20px', backgroundColor: 'white', borderRadius: '12px', border: `1px solid ${colors.border}`, boxShadow: '0 10px 40px rgba(0,0,0,0.15)', zIndex: 100, marginTop: '4px', overflow: 'hidden' }}>
                 <div style={{ padding: '12px' }}>
                   <div style={{ position: 'relative' }}>
-                    <Icons.Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
                     <input
                       type="text"
                       value={searchTerm}
@@ -4564,7 +3969,7 @@ const URSContent = ({ userRole = 'metier', onNavigateToAnalysis }) => {
           {/* Search */}
           <div style={{ marginBottom: '20px' }}>
             <div style={{ position: 'relative' }}>
-              <Icons.Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
               <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher une exigence..." style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: 'white' }} />
             </div>
           </div>
@@ -6576,7 +5981,7 @@ const UsersContent = () => {
 
       {/* Recherche */}
       <div style={{ marginBottom: '20px', position: 'relative', maxWidth: '400px' }}>
-        <Icons.Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
         <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher un utilisateur..." style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: 'white' }} />
       </div>
 
@@ -6805,15 +6210,15 @@ const BackofficePage = ({ onBackToHome }) => {
 // =============================================================================
 
 // Header page d'accueil
-const HomeHeader = ({ userRole, onRoleChange, onOpenBackoffice, onOpenHelp }) => (
+const HomeHeader = ({ userRole, onRoleChange, onOpenBackoffice, onOpenHelp, wireframe, onToggleWireframe }) => (
   <header style={{ height: '64px', backgroundColor: 'white', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', position: 'sticky', top: 0, zIndex: 100 }}>
     <AppLogo />
     
     {/* Recherche globale */}
     <div style={{ flex: 1, maxWidth: '480px', margin: '0 40px' }}>
       <div style={{ position: 'relative' }}>
-        <Icons.Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
-        <input type="text" placeholder="Rechercher un projet, une tâche, un document..." style={{ width: '100%', padding: '10px 14px 10px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: colors.background }} />
+        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
+        <input type="text" placeholder="Rechercher un projet, une t\u00E2che, un document..." style={{ width: '100%', padding: '10px 14px 10px 44px', borderRadius: '10px', border: `1px solid ${colors.border}`, fontSize: '14px', outline: 'none', backgroundColor: colors.background }} />
       </div>
     </div>
     
@@ -6840,6 +6245,10 @@ const HomeHeader = ({ userRole, onRoleChange, onOpenBackoffice, onOpenHelp }) =>
       <button style={{ width: '40px', height: '40px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textSecondary, position: 'relative' }}>
         <Icons.Bell />
         <span style={{ position: 'absolute', top: '8px', right: '8px', width: '8px', height: '8px', backgroundColor: colors.error, borderRadius: '50%', border: '2px solid white' }} />
+      </button>
+      {/* Toggle wireframe */}
+      <button onClick={onToggleWireframe} title={wireframe ? 'Mode couleur' : 'Mode wireframe'} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', border: `1px solid ${wireframe ? colors.textPrimary : colors.border}`, backgroundColor: wireframe ? colors.textPrimary : 'transparent', color: wireframe ? 'white' : colors.textSecondary, fontSize: '11px', fontWeight: 500 }}>
+        <Icons.Eye /> WF
       </button>
       <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
         <span style={{ fontSize: '14px', fontWeight: 600, color: 'white' }}>JD</span>
@@ -7532,7 +6941,7 @@ const GlossaryContent = () => {
       
       {/* Recherche */}
       <div style={{ position: 'relative', marginBottom: '24px' }}>
-        <Icons.Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+        <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
         <input
           type="text"
           value={searchTerm}
@@ -8202,14 +7611,14 @@ const AdminDashboard = ({ onOpenBackoffice, onOpenProject }) => {
 };
 
 // Page d'accueil complète
-const HomePage = ({ userRole, onRoleChange, onOpenProject, onCreateProject, onOpenBackoffice, onOpenHelp }) => {
+const HomePage = ({ userRole, onRoleChange, onOpenProject, onCreateProject, onOpenBackoffice, onOpenHelp, wireframe, onToggleWireframe }) => {
   
   // Noms selon le rôle
   const userName = userRole === 'metier' ? 'Jean' : userRole === 'qualite' ? 'Marie' : 'Admin';
 
   return (
     <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", backgroundColor: colors.background, minHeight: '100vh' }}>
-      <HomeHeader userRole={userRole} onRoleChange={onRoleChange} onOpenBackoffice={onOpenBackoffice} onOpenHelp={onOpenHelp} />
+      <HomeHeader userRole={userRole} onRoleChange={onRoleChange} onOpenBackoffice={onOpenBackoffice} onOpenHelp={onOpenHelp} wireframe={wireframe} onToggleWireframe={onToggleWireframe} />
       
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px' }}>
         {/* Welcome section */}
@@ -8917,7 +8326,7 @@ const SpriteModal = ({ isOpen, onClose, onSelect }) => {
             </button>
           </div>
           <div style={{ position: 'relative' }}>
-            <Icons.Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary, display: 'flex', alignItems: 'center' }}><Icons.Search /></span>
             <input
               type="text"
               value={searchTerm}
@@ -8984,7 +8393,7 @@ const calculateRequiredSteps = (formData) => {
   return requirements;
 };
 
-const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate }) => {
+const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate, wireframe, onToggleWireframe }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -9012,6 +8421,7 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate }) => {
   const [showSpriteModal, setShowSpriteModal] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [createStep, setCreateStep] = useState(1); // 1 = config, 2 = documents & steps
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -9113,7 +8523,7 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate }) => {
 
   return (
     <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", backgroundColor: colors.background, minHeight: '100vh' }}>
-      <HomeHeader userRole={userRole} onRoleChange={onRoleChange} />
+      <HomeHeader userRole={userRole} onRoleChange={onRoleChange} wireframe={wireframe} onToggleWireframe={onToggleWireframe} />
       
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px' }}>
         {/* Header */}
@@ -9135,8 +8545,21 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate }) => {
           </div>
         </div>
 
-        {/* Formulaire en blocs pleine largeur */}
-        
+        {/* Stepper */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: colors.primary, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>1</div>
+            <span style={{ fontSize: '13px', fontWeight: createStep === 1 ? 600 : 400, color: createStep === 1 ? colors.textPrimary : colors.textSecondary }}>Configuration</span>
+          </div>
+          <div style={{ width: '40px', height: '2px', backgroundColor: createStep >= 2 ? colors.primary : colors.border }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: createStep >= 2 ? colors.primary : colors.border, color: createStep >= 2 ? 'white' : colors.textSecondary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>2</div>
+            <span style={{ fontSize: '13px', fontWeight: createStep === 2 ? 600 : 400, color: createStep === 2 ? colors.textPrimary : colors.textSecondary }}>Documents & \u00C9tapes</span>
+          </div>
+        </div>
+
+        {/* \u00C9tape 1 : Configuration */}
+        {createStep === 1 && <>
         {/* 1. Informations générales */}
         <FormSection title="Informations générales" icon="📋">
           <FormInput label="Nom du projet" value={formData.name} onChange={(v) => updateField('name', v)} placeholder="Ex: LIMS v3.2" required />
@@ -9279,9 +8702,11 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate }) => {
           )}
         </FormSection>
 
-        {/* 5. Documents & Étapes requis */}
-        {(formData.perimeter && formData.gamp5Category && formData.criticality) && (
-          <FormSection title="Documents & Étapes requis" icon="📑">
+        </>}
+
+        {/* \u00C9tape 2 : Documents & \u00C9tapes requis */}
+        {createStep === 2 && <>
+          <FormSection title="Documents & \u00C9tapes requis" icon="\uD83D\uDCD1">
             <p style={{ fontSize: '13px', color: colors.textSecondary, margin: '0 0 16px', padding: '12px', backgroundColor: colors.primaryLight, borderRadius: '8px' }}>
               <Icons.Info style={{ width: 14, height: 14, verticalAlign: 'middle', marginRight: '6px' }} />
               Pré-calculé selon votre configuration. Vous pouvez ajuster avec justification.
@@ -9311,16 +8736,26 @@ const CreateProjectPage = ({ userRole, onRoleChange, onCancel, onCreate }) => {
               />
             ))}
           </FormSection>
-        )}
+        </>}
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', paddingTop: '24px', borderTop: `1px solid ${colors.border}` }}>
           <button onClick={onCancel} style={{ padding: '12px 24px', backgroundColor: 'white', border: `1px solid ${colors.border}`, borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: colors.textSecondary, fontWeight: 500 }}>
             Annuler
           </button>
-          <button onClick={onCreate} disabled={!isFormValid} style={{ padding: '12px 32px', backgroundColor: isFormValid ? colors.primary : colors.border, border: 'none', borderRadius: '8px', cursor: isFormValid ? 'pointer' : 'not-allowed', fontSize: '14px', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Icons.Plus /> Créer le projet
-          </button>
+          {createStep === 1 && (
+            <button onClick={() => setCreateStep(2)} disabled={!isFormValid} style={{ padding: '12px 32px', backgroundColor: isFormValid ? colors.primary : colors.border, border: 'none', borderRadius: '8px', cursor: isFormValid ? 'pointer' : 'not-allowed', fontSize: '14px', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Calculer les Documents & \u00C9tapes requis <Icons.ArrowRight />
+            </button>
+          )}
+          {createStep === 2 && <>
+            <button onClick={() => setCreateStep(1)} style={{ padding: '12px 24px', backgroundColor: 'white', border: `1px solid ${colors.border}`, borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: colors.textSecondary, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Icons.ArrowLeft /> Retour
+            </button>
+            <button onClick={onCreate} style={{ padding: '12px 32px', backgroundColor: colors.primary, border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Icons.Plus /> Cr\u00E9er le projet
+            </button>
+          </>}
         </div>
       </div>
       
@@ -9700,38 +9135,6 @@ const ProjectInfoContent = ({ onNavigate }) => {
           ))}
         </FormSection>
 
-        {/* Équipe projet */}
-        <FormSection title="Équipe projet" icon="👥">
-          <div style={{ padding: '16px', backgroundColor: colors.background, borderRadius: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', color: colors.textSecondary }}>7 membres assignés</span>
-              <button onClick={() => onNavigate('raci')} style={{ fontSize: '12px', color: colors.primary, backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 500 }}>Voir l'équipe →</button>
-            </div>
-            <div style={{ display: 'flex', gap: '-8px' }}>
-              {['JD', 'ML', 'PT', 'SL', 'AB'].map((initials, i) => (
-                <div key={i} style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: colors.primaryLight, border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: colors.primary, marginLeft: i > 0 ? '-8px' : 0 }}>{initials}</div>
-              ))}
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: colors.background, border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: colors.textSecondary, marginLeft: '-8px' }}>+2</div>
-            </div>
-          </div>
-        </FormSection>
-
-        {/* Historique des modifications */}
-        <FormSection title="Historique" icon="📜">
-          <div style={{ fontSize: '13px', color: colors.textSecondary }}>
-            {[
-              { date: '28 nov. 2024', user: 'Jean Dupont', action: 'Modification de la date cible' },
-              { date: '15 nov. 2024', user: 'Marie Lambert', action: 'Ajout documentation fournisseur' },
-              { date: '15 oct. 2024', user: 'Jean Dupont', action: 'Création du projet' },
-            ].map((entry, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: i < 2 ? `1px solid ${colors.border}` : 'none' }}>
-                <span style={{ fontSize: '12px', color: colors.textSecondary, minWidth: '90px' }}>{entry.date}</span>
-                <span style={{ color: colors.textPrimary }}>{entry.user}</span>
-                <span style={{ color: colors.textSecondary }}>— {entry.action}</span>
-              </div>
-            ))}
-          </div>
-        </FormSection>
       </div>
     </div>
   );
@@ -9744,14 +9147,15 @@ export default function GxPDocApp() {
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'project' | 'create-project' | 'backoffice' | 'help'
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [userRole, setUserRole] = useState('metier'); // Défaut métier pour la démo
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState('info');
   const [criticalAnalysisType, setCriticalAnalysisType] = useState(null); // null | 'docs' | 'urs' | 'fs'
+  const [wireframe, setWireframe] = useState(false);
   
   // Ouvrir un projet
   const handleOpenProject = (projectId) => {
     setCurrentProjectId(projectId);
     setCurrentView('project');
-    setActiveSection('overview');
+    setActiveSection('info');
   };
   
   // Créer un projet
@@ -9773,7 +9177,7 @@ export default function GxPDocApp() {
   const handleProjectCreated = () => {
     setCurrentProjectId('lims-v3.2');
     setCurrentView('project');
-    setActiveSection('overview');
+    setActiveSection('info');
   };
   
   // Retour à l'accueil
@@ -9796,8 +9200,6 @@ export default function GxPDocApp() {
     }
     
     switch (activeSection) {
-      case 'overview':
-        return <OverviewContent userRole={userRole} />;
       case 'info':
         return <ProjectInfoContent onNavigate={handleSectionChange} />;
       case 'raci':
@@ -9814,16 +9216,8 @@ export default function GxPDocApp() {
         return <FSContent userRole={userRole} onNavigateToAnalysis={() => setCriticalAnalysisType('fs')} />;
       case 'fra':
         return <FRAContent userRole={userRole} />;
-      case 'protocols':
-        return <PlaceholderPage title="Protocoles de test" description="Protocoles IQ/OQ/PQ" />;
-      case 'scripts':
-        return <PlaceholderPage title="Scripts de test" description="Scripts d'exécution des tests" />;
-      case 'reports':
-        return <PlaceholderPage title="Rapports de test" description="Résultats et rapports d'exécution" />;
-      case 'vsr':
-        return <PlaceholderPage title="Rapport final (VSR)" description="Validation Summary Report" />;
       default:
-        return <OverviewContent userRole={userRole} />;
+        return <ProjectInfoContent onNavigate={handleSectionChange} />;
     }
   };
   
@@ -9833,54 +9227,66 @@ export default function GxPDocApp() {
     setActiveSection(section);
   };
   
+  const wfStyle = wireframe ? { filter: 'grayscale(1)', WebkitFilter: 'grayscale(1)' } : {};
+
   // Vue Backoffice
   if (currentView === 'backoffice') {
-    return <BackofficePage onBackToHome={handleBackToHome} />;
+    return <div style={wfStyle}><BackofficePage onBackToHome={handleBackToHome} /></div>;
   }
-  
+
   // Vue Aide et Ressources
   if (currentView === 'help') {
-    return <HelpPage userRole={userRole} onBackToHome={handleBackToHome} />;
+    return <div style={wfStyle}><HelpPage userRole={userRole} onBackToHome={handleBackToHome} /></div>;
   }
-  
-  // Vue Création de projet
+
+  // Vue Cr\u00E9ation de projet
   if (currentView === 'create-project') {
     return (
-      <CreateProjectPage 
-        userRole={userRole}
-        onRoleChange={setUserRole}
-        onCancel={handleBackToHome}
-        onCreate={handleProjectCreated}
-      />
+      <div style={wfStyle}>
+        <CreateProjectPage
+          userRole={userRole}
+          onRoleChange={setUserRole}
+          onCancel={handleBackToHome}
+          onCreate={handleProjectCreated}
+          wireframe={wireframe}
+          onToggleWireframe={() => setWireframe(w => !w)}
+        />
+      </div>
     );
   }
-  
+
   // Vue Accueil
   if (currentView === 'home') {
     return (
-      <HomePage 
-        userRole={userRole} 
-        onRoleChange={setUserRole} 
-        onOpenProject={handleOpenProject}
-        onCreateProject={handleCreateProject}
-        onOpenBackoffice={handleOpenBackoffice}
-        onOpenHelp={handleOpenHelp}
-      />
+      <div style={wfStyle}>
+        <HomePage
+          userRole={userRole}
+          onRoleChange={setUserRole}
+          onOpenProject={handleOpenProject}
+          onCreateProject={handleCreateProject}
+          onOpenBackoffice={handleOpenBackoffice}
+          onOpenHelp={handleOpenHelp}
+          wireframe={wireframe}
+          onToggleWireframe={() => setWireframe(w => !w)}
+        />
+      </div>
     );
   }
-  
+
   // Vue Projet
   return (
-    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", backgroundColor: colors.background, minHeight: '100vh' }}>
-      <Header 
-        projectName="LIMS v3.2" 
+    <div style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", backgroundColor: colors.background, minHeight: '100vh', ...wfStyle }}>
+      <Header
+        projectName="LIMS v3.2"
         userRole={userRole}
         onRoleChange={setUserRole}
         onBackToHome={handleBackToHome}
+        wireframe={wireframe}
+        onToggleWireframe={() => setWireframe(w => !w)}
       />
       <div style={{ display: 'flex' }}>
-        <SidebarNavigation 
-          activeSection={activeSection} 
+        <SidebarNavigation
+          activeSection={activeSection}
           onSectionChange={handleSectionChange}
           onBackToHome={handleBackToHome}
         />
